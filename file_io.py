@@ -84,6 +84,7 @@ def process_file(file_path, data_col, track_length, time_between_samples, bin_nu
     # return times, freq, VSPD_compressible, VSPD_incompressible, PSD_incompressible, PSD_compressible, VACF_compressible, VACF_incompressible, PACF_compressible, PACF_incompressible, TPSD_compressible, TPSD_incompressible
 
     return {
+        "time": time,
         "frequency": frequency,
         "responses": responses,
         "acf": acf,
@@ -102,11 +103,11 @@ def load_results(filename):
         return pickle.load(f)
 
 def check_and_load_or_process(process_function, filename, *args):
-    if os.path.exists(filename):
-        print(f"Loading results from {filename}")
-        return load_results(filename)
-    else:
-        print(f"Processing data for {filename}")
-        results = process_function(*args)
-        save_results(results, filename)
-        return results
+    # if os.path.exists(filename):
+    #     print(f"Loading results from {filename}")
+    #     return load_results(filename)
+    # else:
+    print(f"Processing data for {filename}")
+    results = process_function(*args)
+    save_results(results, filename)
+    return results

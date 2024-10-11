@@ -1,28 +1,31 @@
+import matplotlib
+import matplotlib.ticker as ticker
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-def plot_results(bright_noise_results, trapped_microsphere_results, plot_together=True):
-    if plot_together:
-        # Plot both datasets on the same graph
-        plt.figure(figsize=(10, 6))
-        #plot_dataset(bright_noise_results, label="Bright Noise", linestyle='--', linewidth=1)
-        plot_dataset(trapped_microsphere_results, label="Trapped Microsphere", linestyle='--', linewidth=1)
-        plt.legend()
-        plt.title("Combined Plot of Bright Noise and Trapped Microsphere Signal")
-    else:
-        # Plot each dataset on separate graphs
-        plt.figure(figsize=(10, 6))
-        #plot_dataset(bright_noise_results, label="Bright Noise", linestyle='--', linewidth=1)
-        plt.legend()
-        plt.title("Bright Noise")
+import numpy as np
+def plot_results(trapped_microsphere_results, label, psd=True, pacf=False):
+    plt.gca().yaxis.set_major_formatter(ticker.LogFormatter(base=10))
+    if psd:
+        plot_psd(trapped_microsphere_results, label="PSD " + label)
+    if pacf:
+        plot_pacf(trapped_microsphere_results, label="PACF " + label)
 
-        plt.figure(figsize=(10, 6))
-        plot_dataset(trapped_microsphere_results, label="Trapped Microsphere", linestyle='-', linewidth=1)
-        plt.legend()
-        plt.title("Trapped Microsphere Signal")
-
+def plot_psd(dataset, label, avg=True):
+    all_responses = np.array([item["responses"][1:-1] for item in dataset])
+    print("averaged " + str(len(dataset)))
+    avg_response = np.mean(all_responses, axis=0)
+    plt.plot(dataset[0]["frequency"][1:-1], avg_response, label=label,
+             linewidth=.25)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.legend()
+    plt.title("Trapped Microsphere Signal")
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Signal [V^2/Hz]")
 
-def plot_dataset(dataset, label, linestyle, linewidth):
+def plot_pacf(dataset, label):
     for result in dataset:
-        plt.plot(result["frequency"][1:-1], result["responses"][1:-1], label=label, linestyle=linestyle,
-                 linewidth=linewidth)
+        plt.plot(result["time"], result["acf"], label=label,
+                 linewidth=1.5)
+        plt.xscale("log")
+        plt.legend()
