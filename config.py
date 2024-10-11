@@ -1,0 +1,13 @@
+import numpy as np
+
+# Configuration
+MICROSPHERE_RADIUS = 3e-6
+TRACKS_PER_FILE = 1
+TRACK_LENGTH = 2**22 - 100
+R = 25000000
+TIME_BETWEEN_SAMPLES = 1.0 / R
+BIN_NUM = 1
+NUM_FILES = 1
+NUM_LOG_BINS = 100 #???
+CUTOFF_FREQUENCY = np.log10(10**5) #???
+STARTING_FREQUENCY = np.log10(10*3) #???
