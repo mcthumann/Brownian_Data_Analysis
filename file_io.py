@@ -43,47 +43,16 @@ def process_file(file_path, data_col, track_length, time_between_samples, bin_nu
     bin_time = bin_data(time, bin_num)
 
     v_series = np.diff(bin_series) / np.diff(bin_time)
-    print("reading frequency")
     frequency, local_response = scipy.signal.periodogram(bin_series, 1 / (time_between_samples * bin_num), scaling="density")
     v_freq, v_psd_local = scipy.signal.periodogram(v_series, 1 / (time_between_samples * bin_num), scaling="density")
-    print("generating responses")
     responses = np.sqrt(local_response)
     v_psd = np.sqrt(v_psd_local)
     acf = autocorrelation(bin_series)
     v_acf = autocorrelation(v_series)
     second_moment = np.average(bin_series ** 2)
 
-    # power = np.linspace(0, 10.5, VSP_length)
-    # freq = (np.ones(VSP_length) * 10) ** power
-    # VSPD_compressible = velocity_spectral_density(freq, admittance)
-    # VSPD_incompressible = velocity_spectral_density(freq, incompressible_admittance)
-    # PSD_incompressible = VSPD_incompressible / freq ** 2
-    # PSD_compressible = VSPD_compressible / freq ** 2
-    #
-    # TPSD_compressible = thermal_force_PSD(freq, PSD_compressible, gamma(freq), m)
-    # TPSD_incompressible = thermal_force_PSD(freq, PSD_incompressible, incompressible_gamma(freq), m + 1 / 2 * m_f)
-    #
-    # VACF_compressible = ACF_from_SPD(admittance, velocity_spectral_density, times)
-    # VACF_incompressible = ACF_from_SPD(incompressible_admittance, velocity_spectral_density, times)
-    #
-    # PACF_compressible = ACF_from_SPD(admittance, position_spectral_density, times)
-    # PACF_incompressible = ACF_from_SPD(incompressible_admittance, position_spectral_density, times)
-    #
-    # MSD_compressible = mean_square_displacement(PACF_compressible)
-    # MSD_incompressible = mean_square_displacement(PACF_incompressible)
-    #
-    # compress_correction = (k_b * T / K / PACF_compressible[0])
-    # incompress_correction = (k_b * T / K / PACF_incompressible[0])
-    #
-    # PACF_incompressible *= compress_correction
-    # PACF_compressible *= incompress_correction
-    #
-    # TPSD_compressible = thermal_force_PSD(freq, PSD_compressible, gamma(freq), m)
-    # TPSD_incompressible = thermal_force_PSD(freq, PSD_incompressible, incompressible_gamma(freq), m + 1 / 2 * m_f)
-
-    # return times, freq, VSPD_compressible, VSPD_incompressible, PSD_incompressible, PSD_compressible, VACF_compressible, VACF_incompressible, PACF_compressible, PACF_incompressible, TPSD_compressible, TPSD_incompressible
-
     return {
+        "series": series,
         "time": time,
         "frequency": frequency,
         "responses": responses,
@@ -103,11 +72,11 @@ def load_results(filename):
         return pickle.load(f)
 
 def check_and_load_or_process(process_function, filename, *args):
-    # if os.path.exists(filename):
-    #     print(f"Loading results from {filename}")
-    #     return load_results(filename)
-    # else:
-    print(f"Processing data for {filename}")
-    results = process_function(*args)
-    save_results(results, filename)
-    return results
+    if os.path.exists(filename):
+        print(f"Loading results from {filename}")
+        return load_results(filename)
+    else:
+        print(f"Processing data for {filename}")
+        results = process_function(*args)
+        save_results(results, filename)
+        return results

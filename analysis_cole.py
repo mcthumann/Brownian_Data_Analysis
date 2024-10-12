@@ -10,168 +10,122 @@ def autocorrelation(signal):
     acf /= acf[0]
     return acf
 
+# time = np.arange(0, len(series)) * TIME_BETWEEN_SAMPLES
 
-def model(w, a_scale, k_trap, m):
-    a = MICROSPHERE_RADIUS
-    k_b = 1.380649e-23
-    temp = 295
-    nu = .010016
-    gamma_s = 6 * np.pi * nu * a
-    w_o = np.sqrt(k_trap / m)
-    p = 997.97
-    tao_f = (p * (a ** 2)) / nu
-
-    # Position PSD
-    psd = (2 * k_b * temp * gamma_s * (1 + np.sqrt(.5 * w * tao_f))) / (
-            (m * (w_o ** 2 - w ** 2) - w * gamma_s * np.sqrt(.5 * w * tao_f)) ** 2 + (
-                (w ** 2) * (gamma_s ** 2) * ((1 + np.sqrt(.5 * w * tao_f)) ** 2)))
-    return a_scale * psd
+def gamma(omega):
+    alpha = np.sqrt(-1j * omega * tau_f)
+    lambdas = a * omega / np.sqrt(-1 * c ** 2 + 1j * omega * (bulk + 4 / 3 * shear) / density)
+    numerator = (1 + lambdas) * (9 + 9 * alpha + alpha ** 2) + 2 * lambdas ** 2 * (1 + alpha)
+    denominator = 2 * (1 + lambdas) + (1 + alpha + alpha ** 2) * lambdas ** 2 / alpha ** 2
+    return 4 * np.pi * shear * a / 3 * numerator / denominator
 
 
-def log_model(log_w, scale, log_k_trap, log_m):
-    # Convert from log scale to linear scale
-    a = MICROSPHERE_RADIUS
-    w = np.power(10, log_w)
-    m = np.power(10, log_m)
-    k_trap = np.power(10, log_k_trap)
-
-    # Constants
-    k_b = 1.380649e-23
-    temp = 295
-    nu = 0.010016
-    gamma_s = 6 * np.pi * nu * a
-    w_o = np.sqrt(k_trap / m)
-    p = 997.97
-    tao_f = (p * (a ** 2)) / nu
-
-    # Position PSD
-    psd = (2 * k_b * temp * gamma_s * (1 + np.sqrt(0.5 * w * tao_f))) / (
-            (m * (w_o ** 2 - w ** 2) - w * gamma_s * np.sqrt(0.5 * w * tao_f)) ** 2 +
-            ((w ** 2) * (gamma_s ** 2) * ((1 + np.sqrt(0.5 * w * tao_f)) ** 2))
-    )
-
-    # Return the logarithm of the PSD
-    return np.log(scale * psd)
+def admittance(omega):
+    return 1 / (-1j * omega * m + gamma(omega) + K / (-1j * omega))
 
 
-def log_admittance_model(log_frequency, scale, trap_stiffness, mass):
-    # Constants
-    k_b = 1.380649e-23  # Boltzmann constant
-    temp = 295  # Temperature
-    nu = .010016  # Kinematic viscosity
-    rho = 997.97  # Density of water
-    radius = MICROSPHERE_RADIUS
-    # Convert logarithmic inputs back to linear scale
-    frequency = np.power(10, log_frequency)
-
-    # Calculations
-    gamma_s = 6 * np.pi * nu * radius
-    tao_f = (rho * (radius ** 2)) / nu
-    m_f = (4 / 3) * np.pi * (radius ** 3) * rho
-
-    w = 2 * np.pi * frequency  # Angular frequency
-    admittance = 1 / (-1j * w * mass + gamma_s * (1 + np.sqrt(-1j * w * tao_f)) -
-                      ((1j * w * m_f) / 2) + (trap_stiffness / (-1j * w)))
-
-    v_psd = 2 * k_b * temp * admittance.real
-    p_psd = v_psd / w ** 2
-
-    psd_position_scaled = scale * p_psd  # Scale the PSD by the factor A
-    log_psd_position = np.log10(psd_position_scaled)  # Compute the logarithm of the scaled PSD
-    return log_psd_position
+def incompressible_admittance(omega):
+    return 1 / (-1j * omega * (m + m_f / 2) + gamma_s * (1 + np.sqrt(-1j * omega * tau_f)) + K / (-1j * omega))
 
 
-def position_psd_clercx(freq, a_scale, k_trap, m):
-    # Constants
-    k_b = 1.380649e-23  # Boltzmann constant
-    temp = 295  # Temperature
-    nu = .010016  # Kinematic viscosity
-    rho = 997.97  # Density of water
-    radius = MICROSPHERE_RADIUS
-    gamma_s = 6 * np.pi * nu * radius
-
-    omega = 2 * np.pi * freq
-    xi = gamma_s
-    k_t = k_b * temp
-
-    discriminant = (xi / m) ** 2 - 4 * k_trap / m
-    if discriminant < 0:
-        return np.zeros_like(freq)  # Return zero for non-physical parameters
-
-    alpha = xi / m - np.sqrt(discriminant)
-    beta = xi / m + np.sqrt(discriminant)
-
-    psd_position = (k_t / m) * ((beta / (beta ** 2 + omega ** 2) - alpha / (alpha ** 2 + omega ** 2)) ** 2) / (
-            (beta - alpha) ** 2 * omega ** 2)
-
-    return a_scale * psd_position
+def incompressible_gamma(omega):
+    return gamma_s * (1 + np.sqrt(-1j * omega * tau_f))
 
 
-def log_position_psd_clercx(log_freq, scale, k_trap, m):
-    # Constants
-    k_b = 1.380649e-23  # Boltzmann constant
-    temp = 295  # Temperature
-    nu = 0.010016  # Kinematic viscosity
-    rho = 997.97  # Density of water
-    radius = MICROSPHERE_RADIUS
-    xi = 6 * np.pi * nu * radius
-
-    # Convert logarithmic inputs back to linear scale using base 10
-    freq = np.power(10, log_freq)  # Convert back to linear frequency
-
-    omega = 2 * np.pi * freq
-    k_t = k_b * temp
-
-    discriminant = (xi / m) ** 2 - 4 * k_trap / m
-    if discriminant < 0:
-        return np.full_like(freq, -np.inf)  # Log of zero for non-physical parameters
-
-    alpha = xi / m - np.sqrt(discriminant)
-    beta = xi / m + np.sqrt(discriminant)
-
-    with np.errstate(divide='ignore', invalid='ignore'):
-        psd_position = (k_t / m) * ((beta / (beta ** 2 + omega ** 2) - alpha / (alpha ** 2 + omega ** 2)) ** 2) / (
-                (beta - alpha) ** 2 * omega ** 2)
-        psd_position[omega == 0] = np.nan  # Avoid divide by zero
-
-    psd_position_scaled = scale * psd_position  # Scale the PSD by the factor A
-    log_psd_position = np.log10(psd_position_scaled)  # Compute the logarithm of the scaled PSD
-    return log_psd_position
+def velocity_spectral_density(omega, admit_func):
+    return 2 * k_b * T * np.real(admit_func(omega))
 
 
-def admittance_model(w, a_scale, k_trap, m):
-    a = MICROSPHERE_RADIUS
-    k_b = 1.380649e-23
-    temp = 295
-    nu = .010016
-    gamma_s = 6 * np.pi * nu * a
-    w_o = np.sqrt(m / k_trap)
-    p = 997.97
-    m_f = (4 / 3) * np.pi * (a ** 3) * p
-    tao_f = (p * (a ** 2)) / nu
+def position_spectral_density(omega, admit_func):
+    return velocity_spectral_density(omega, admit_func) / omega ** 2
 
-    # Position PSD
-    # return (2*k_b*temp*gamma_s*(1+np.sqrt(.5*w*tao_f)))/((m*(w_o**2 - w**2) -
-    # w*gamma_s*np.sqrt(.5*w*tao_f))**2 + ((w**2)*(gamma_s**2)*((1+np.sqrt(.5*w*tao_f))**2)))
-    w = np.array(w, dtype=complex)
-    m = np.array(m, dtype=complex)
-    gamma_s = np.array(gamma_s, dtype=complex)
-    tao_f = np.array(tao_f, dtype=complex)
-    m_f = np.array(m_f, dtype=complex)
-    k_b = np.array(k_b, dtype=complex)
-    temp = np.array(temp, dtype=complex)
 
-    # Admittance
-    admittance = 1 / (
-            -1j * w * m + gamma_s * (1 + np.sqrt(-1j * w * tao_f)) - ((1j * w * m_f) / 2) + (k_trap / (-1j * w)))
-    admittance = np.array(admittance, dtype=complex)
+def thermal_force_PSD(omega, SPD, gamma, mass):
+    G = (-1 * omega ** 2 * mass - 1j * omega * gamma + K) ** -1
+    return np.abs(G) ** -2 * SPD
 
-    k_b = np.array(k_b, dtype=float)
-    temp = np.array(temp, dtype=float)
-    w = np.array(w, dtype=float)
 
-    # Now perform the operation
-    v_psd = 2 * k_b * temp * admittance.real
-    v_psd = np.array(v_psd, dtype=float)
-    p_psd = v_psd / w ** 2
-    return a_scale * p_psd
+def ACF_from_SPD(admit_function, SPD_func, times):
+    low_freq = np.linspace(1, 10 ** 4, integ_points)
+    mid_freq = np.linspace(10 ** 4, 10 ** 6, integ_points)
+    high_freq = np.linspace(10 ** 6, 10 ** 9, integ_points)
+    top_freq = np.linspace(10 ** 9, 10 ** 12, integ_points)
+
+    frequencies = np.concatenate((low_freq, mid_freq, high_freq, top_freq))
+    ACF = np.zeros(len(times))
+
+    for i in range(len(times)):
+        ACF[i] = 2 * np.real(
+            scipy.integrate.simps(SPD_func(frequencies, admit_function) * np.exp(-1j * frequencies * times[i]),
+                                  frequencies)) / (2 * np.pi)
+
+    return ACF
+
+
+def ACF_from_admit(admit_func, times):
+    lowest = (10 ** -10, 1, integ_points * 2)
+    low_freq = np.linspace(1, 10 ** 4, integ_points)
+    mid_freq = np.linspace(10 ** 4, 10 ** 6, integ_points)
+    high_freq = np.linspace(10 ** 6, 10 ** 9, integ_points)
+    top_freq = np.linspace(10 ** 9, 10 ** 12, integ_points)
+
+    frequencies = np.concatenate((low_freq, mid_freq, high_freq, top_freq))
+    ACF = np.zeros(len(times))
+    admit_guy = np.real(admit_func(frequencies)) / frequencies ** 2
+    for i in range(len(times)):
+        ACF[i] = scipy.integrate.simps(np.cos(frequencies * times[i]) * admit_guy, frequencies)
+
+    return ACF
+
+
+def thermal_ACF_from_SPD(admit_func, tSPD_func, times, SPD_func, gamma, mass):
+    low_freq = np.linspace(10 ** -4, 10 ** 4, integ_points * 10)
+    mid_freq = np.linspace(10 ** 4, 10 ** 6, integ_points * 5)
+    high_freq = np.linspace(10 ** 6, 10 ** 9, integ_points)
+    top_freq = np.linspace(10 ** 9, 10 ** 12, integ_points)
+
+    # frequencies = np.concatenate((mid_freq, high_freq, top_freq))
+    frequencies = low_freq
+    ACF = np.zeros(len(times))
+    SPD = tSPD_func(frequencies, SPD_func(frequencies, admit_func), gamma(frequencies), mass)
+    for i in range(len(times)):
+        ACF[i] = 2 * np.real(
+            scipy.integrate.simps(SPD * np.exp(-1j * frequencies * times[i] * frequencies) / (2 * np.pi)))
+
+    return ACF
+
+
+def mean_square_displacement(PACF):
+    return 2 * k_b * T / K - 2 * PACF
+
+
+def calculate():
+    power = np.linspace(0, 10.5, VSP_length)
+    freq = (np.ones(VSP_length) * 10) ** power
+    VSPD_compressible = velocity_spectral_density(freq, admittance)
+    VSPD_incompressible = velocity_spectral_density(freq, incompressible_admittance)
+    PSD_incompressible = VSPD_incompressible / freq ** 2
+    PSD_compressible = VSPD_compressible / freq ** 2
+
+    TPSD_compressible = thermal_force_PSD(freq, PSD_compressible, gamma(freq), m)
+    TPSD_incompressible = thermal_force_PSD(freq, PSD_incompressible, incompressible_gamma(freq), m + 1 / 2 * m_f)
+
+    VACF_compressible = ACF_from_SPD(admittance, velocity_spectral_density, times)
+    VACF_incompressible = ACF_from_SPD(incompressible_admittance, velocity_spectral_density, times)
+
+    PACF_compressible = ACF_from_SPD(admittance, position_spectral_density, times)
+    PACF_incompressible = ACF_from_SPD(incompressible_admittance, position_spectral_density, times)
+
+    MSD_compressible = mean_square_displacement(PACF_compressible)
+    MSD_incompressible = mean_square_displacement(PACF_incompressible)
+
+    compress_correction = (k_b * T / K / PACF_compressible[0])
+    incompress_correction = (k_b * T / K / PACF_incompressible[0])
+
+    PACF_incompressible *= compress_correction
+    PACF_compressible *= incompress_correction
+
+    TPSD_compressible = thermal_force_PSD(freq, PSD_compressible, gamma(freq), m)
+    TPSD_incompressible = thermal_force_PSD(freq, PSD_incompressible, incompressible_gamma(freq), m + 1 / 2 * m_f)
+
+    return times, freq, VSPD_compressible, VSPD_incompressible, PSD_incompressible, PSD_compressible, VACF_compressible, VACF_incompressible, PACF_compressible, PACF_incompressible, TPSD_compressible, TPSD_incompressible

@@ -2,7 +2,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 from config import *
-from analysis_cole import log_position_psd_clercx
 
 
 def downsample_log_space(xdata, ydata, num_bins):
