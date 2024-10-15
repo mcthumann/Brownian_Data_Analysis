@@ -1,6 +1,6 @@
 
 from file_io import *
-from fitting import *
+from fitting_jason import *
 from analysis_cole import *
 from config import *
 import numpy as np
@@ -20,10 +20,14 @@ def run():
 
         # Plot the data
         plot_results(results, folder)
+        plt.show()
 
         # Fit the results
+        fit_data(results)
+        plt.show()
 
         # Run the Analysis
+
 
     plt.show()
 

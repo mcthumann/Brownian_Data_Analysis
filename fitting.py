@@ -78,3 +78,6 @@ def log_fit_results(results, fit_function):
     popt, pcov = curve_fit(fit_function, xdata_log, ydata_log, bounds=guess_bounds, maxfev=1000000)
 
     return popt, pcov  # Convert fitted parameters back to linear scale
+
+
+
