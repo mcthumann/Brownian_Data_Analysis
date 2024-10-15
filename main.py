@@ -1,7 +1,7 @@
 
 from file_io import *
-from fitting_jason import *
-from analysis_cole import *
+from fitting import *
+from analysis import *
 from config import *
 import numpy as np
 from plotting import *

@@ -1,7 +1,7 @@
 import scipy
 from nptdms import TdmsFile
 import numpy as np
-from analysis_cole import autocorrelation
+from analysis import autocorrelation
 import os
 import pickle
 
