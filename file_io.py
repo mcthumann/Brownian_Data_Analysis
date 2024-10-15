@@ -2,6 +2,7 @@ import scipy
 from nptdms import TdmsFile
 import numpy as np
 from analysis import autocorrelation
+from config import ACF
 import os
 import pickle
 
@@ -20,11 +21,22 @@ def bin_data(series, bin_size):
     return np.mean(series.reshape(-1, bin_size), axis=1)
 
 
+def downsample_log_space(xdata, ydata, num_bins):
+    # Logarithmically space the bins
+    log_bins = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), num_bins)
+    # Digitize the data (assign each data point to a bin)
+    bin_indices = np.digitize(xdata, log_bins)
+    # Calculate the average x and y for each bin
+    xdata_binned = [xdata[bin_indices == i].mean() for i in range(1, len(log_bins))]
+    ydata_binned = [ydata[bin_indices == i].mean() for i in range(1, len(log_bins))]
+    return np.array(xdata_binned), np.array(ydata_binned)
+
+
 def process_folder(folder_name, tracks_per_file, num_files, track_length, time_between_samples, bin_num):
     results = []
     for i in range(num_files):
         print("Reading ", folder_name, str(i))
-        file_path = f"{folder_name}/iter_{i}.tdms"
+        file_path = os.path.join(folder_name, "iter_"+str(i)+".tdms")
         result = process_file(file_path, tracks_per_file, track_length, time_between_samples, bin_num)
         if result:
             results.append(result)
@@ -47,8 +59,12 @@ def process_file(file_path, data_col, track_length, time_between_samples, bin_nu
     v_freq, v_psd_local = scipy.signal.periodogram(v_series, 1 / (time_between_samples * bin_num), scaling="density")
     responses = np.sqrt(local_response)
     v_psd = np.sqrt(v_psd_local)
-    acf = autocorrelation(bin_series)
-    v_acf = autocorrelation(v_series)
+    if ACF:
+        acf = autocorrelation(bin_series)
+        v_acf = autocorrelation(v_series)
+    else:
+        acf = 0
+        v_acf = 0
     second_moment = np.average(bin_series ** 2)
 
     return {
@@ -71,12 +87,12 @@ def load_results(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)
 
-def check_and_load_or_process(process_function, filename, *args):
+def check_and_load_or_process(filename, *args):
     if os.path.exists(filename):
         print(f"Loading results from {filename}")
         return load_results(filename)
     else:
         print(f"Processing data for {filename}")
-        results = process_function(*args)
+        results = process_folder(*args)
         save_results(results, filename)
         return results

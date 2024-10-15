@@ -1,8 +1,11 @@
 import matplotlib
 import matplotlib.ticker as ticker
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
+import platform
+
+if platform.system() == "Darwin":  # mac is identified as 'Darwin'
+    matplotlib.use('TkAgg')
 
 def plot_results(results, label, psd=True, pacf=False):
     plt.gca().yaxis.set_major_formatter(ticker.LogFormatter(base=10))

@@ -13,9 +13,8 @@ def run():
         filename = folder + "_data.pkl"
 
         results = check_and_load_or_process(
-            process_folder,
             filename,
-            "C:/Users/Cole Thumann/OneDrive/Desktop/LabData", TRACKS_PER_FILE, NUM_FILES, TRACK_LENGTH, TIME_BETWEEN_SAMPLES, BIN_NUM
+            BASE_PATH + folder, TRACKS_PER_FILE, NUM_FILES, TRACK_LENGTH, TIME_BETWEEN_SAMPLES, BIN_NUM
         )
 
         # Plot the data
