@@ -6,10 +6,12 @@ from config import ACF
 import os
 import pickle
 
+import matplotlib.pyplot as plt
 
 def read_tdms_file(file_path, data_col, track_length):
     tdms_file = TdmsFile.read(file_path)
-    channel = tdms_file["main"]["X_" + str(data_col)]
+
+    channel = tdms_file["main"]["X_" + str(data_col-1)]
     return channel[:track_length]
 
 

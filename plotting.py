@@ -10,7 +10,12 @@ if platform.system() == "Darwin":  # mac is identified as 'Darwin'
 def plot_results(results, label, psd=True, pacf=False):
     plt.gca().yaxis.set_major_formatter(ticker.LogFormatter(base=10))
     if psd:
+        plot_best_psds(results, "PSD " + str(10), 10)
+        plot_best_psds(results, "PSD " + str(20), 20)
+        plot_best_psds(results, "PSD " + str(30), 30)
+        plot_best_psds(results, "PSD " + str(50), 50)
         plot_psd(results, label="PSD " + label)
+        plt.show()
     if pacf:
         plot_pacf(results, label="PACF " + label)
 
@@ -26,7 +31,33 @@ def plot_psd(dataset, label, avg=True):
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
-    plt.title("Power Spectral Density")
+    plt.title("All 70 Traces Power Spectral Density")
+    plt.xlabel("Frequency [Hz]")
+    plt.ylabel("Signal [V^2/Hz]")
+
+def plot_best_psds(dataset, label, top_percentage):
+
+    sums = [np.sum(data["responses"][1:1000]) for data in dataset]
+
+    num_top_arrays = int(len(dataset) * (top_percentage / 100))
+
+    # Get the indices of arrays sorted by their sums (in descending order)
+    top_indices = np.argsort(sums)[-num_top_arrays:]
+
+    # Select the top percentage arrays
+    top_psds = [dataset[i]["responses"][1:-1] for i in top_indices]
+
+    print("Averaged " + str(num_top_arrays) + " PSDs")
+
+    # Calculate the average response across the top PSDs
+    avg_response = np.mean(top_psds, axis=0)
+
+    plt.plot(dataset[0]["frequency"][1:-1], avg_response, label=label,
+             linewidth=.25)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.legend()
+    plt.title("Best " + str(top_percentage) + " Percent of Data Power Spectral Density")
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Signal [V^2/Hz]")
 

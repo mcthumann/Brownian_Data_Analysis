@@ -1,13 +1,13 @@
 import numpy as np
 # Configuration
 
-BASE_PATH = "/Users/colethumann/Desktop/20241008/with_preamp_and_higher_resistor2"
+BASE_PATH = r"C:\Users\Cole Thumann\OneDrive\Desktop\LabData\test_3PM_small_samples_200Ms\test_3PM_small_samples_200Ms"
 TRACKS_PER_FILE = 1
-TRACK_LENGTH = 2**19 - 100
+TRACK_LENGTH = 2**14 - 100
 R = 200000000
 TIME_BETWEEN_SAMPLES = 1.0 / R
 BIN_NUM = 1
-NUM_FILES = 1
+NUM_FILES = 70
 
 ACF = False
 

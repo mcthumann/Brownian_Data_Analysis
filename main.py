@@ -19,7 +19,6 @@ def run():
 
         # Plot the data
         plot_results(results, folder)
-        plt.show()
 
         # Fit the results
         fit_data(results)
