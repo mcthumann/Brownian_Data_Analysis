@@ -16,17 +16,23 @@ def read_tdms_file(file_path, data_col, track_length):
     channel = tdms_file["main"]["X_" + str(data_col-1)]
     return channel[:track_length]
 
+
 def read_csv_file(file_path, data_col, track_length):
-    df = pd.read_csv(file_path)
-    position_col = "Position " + str(data_col - 1)
-    if position_col in df.columns:
+    # Read CSV with low_memory=False to avoid DtypeWarning
+    df = pd.read_csv(file_path, low_memory=False)
+
+    # Filter columns that start with "Position"
+    position_columns = [col for col in df.columns if col.startswith("Position")]
+
+    if data_col - 1 < len(position_columns):
+        position_col = position_columns[data_col - 1]
         return df[position_col].iloc[:track_length]
     else:
-        raise ValueError(f"Column {position_col} not found in CSV file.")
+        raise ValueError(f"Data column index {data_col} is out of range for available 'Position' columns.")
 
 def bin_data(series, bin_size):
     # Ensuring the length of series is divisible by bin_size
-    print("bin")
+    print("Bin")
     length = len(series) - len(series) % bin_size
     series = np.array(series[:length])
     return np.mean(series.reshape(-1, bin_size), axis=1)
@@ -110,7 +116,8 @@ def process_folder(folder_name, tracks_per_file, num_traces, track_length, time_
 
 def process_file(folder_name, trace_num, data_col, track_length, time_between_samples, bin_num):
     if SIM:
-        series = read_csv_file(folder_name, data_col, track_length)
+        print(trace_num)
+        series = read_csv_file(folder_name, trace_num, track_length)
     else:
         file_path = os.path.join(folder_name, "iter_" + str(trace_num) + ".tdms")
         series = read_tdms_file(file_path, data_col, track_length)
@@ -149,6 +156,7 @@ def process_file(folder_name, trace_num, data_col, track_length, time_between_sa
     else:
         acf = 0
         v_acf = 0
+
     second_moment = np.average(series ** 2)
 
     return {

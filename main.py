@@ -4,7 +4,6 @@ from fitting import *
 from config import *
 from plotting import *
 
-
 def run():
     folders = [""]
     for folder in folders:
