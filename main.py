@@ -1,8 +1,5 @@
-import numpy as np
-
 from file_io import *
 from fitting import *
-from config import *
 from plotting import *
 
 def run():
@@ -18,12 +15,12 @@ def run():
         # Plot the data
         plot_results(results, folder)
 
-        K = 1e2  # Example trap strength
+        K = 1  # Example trap strength
         a = 3e-6  # Example particle radius in meters
-        V = 1e30  # Example voltage-to-position conversion factor
+        V = 1  # Example voltage-to-position conversion factor
 
         # Frequency range
-        frequencies = np.logspace(5, 10, 500)  # Logarithmic frequency range from 10^1 to 10^7
+        frequencies = np.logspace(5, 10, 5000)  # Logarithmic frequency range from 10^1 to 10^7
         omega = 2 * np.pi * frequencies  # Convert to angular frequency
 
         # Calculate PSD

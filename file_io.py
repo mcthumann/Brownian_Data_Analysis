@@ -7,6 +7,7 @@ from config import ACF, BIN, SINC, SAMPLING_RATE, HAMMING, BIN_NUM, RECT_WINDOW,
 import os
 import pandas as pd
 import pickle
+import math
 
 import matplotlib.pyplot as plt
 
@@ -147,7 +148,8 @@ def process_file(folder_name, trace_num, data_col, track_length, time_between_sa
 
     frequency, local_response = scipy.signal.periodogram(series, 1 / (time_between_samples * bin_num), scaling="density")
     v_freq, v_psd_local = scipy.signal.periodogram(v_series, 1 / (time_between_samples * bin_num), scaling="density")
-    responses = np.sqrt(local_response)
+    psd = 2*math.pi*local_response
+    plt.show()
     v_psd = np.sqrt(v_psd_local)
 
     if ACF:
@@ -163,7 +165,7 @@ def process_file(folder_name, trace_num, data_col, track_length, time_between_sa
         "series": series,
         "time": time,
         "frequency": frequency,
-        "responses": responses,
+        "psd": psd,
         "acf": acf,
         "v_freq": v_freq,
         "v_psd": v_psd,

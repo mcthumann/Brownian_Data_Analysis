@@ -4,6 +4,7 @@ from scipy.optimize import curve_fit
 from scipy.optimize import minimize
 import scipy
 import math
+from config import scale
 
 
 # Global Parameters
@@ -21,7 +22,7 @@ def PSD_fitting_func(omega, K, a, V):
     numerator = 2 * Const.k_b * Const.T * gamma_s * (1 + np.sqrt((1/2) * omega * tau_f))
     denominator = (K - omega * gamma_s * np.sqrt((1/2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
                 1 + np.sqrt((1/2) * omega * tau_f))**2
-    return V * numerator / denominator
+    return (1/scale) * V * numerator / denominator
 
 def VACF_fitting_func(t, m, K, a):
     t_k = (6 * math.pi * a * Const.eta)/K
@@ -80,7 +81,7 @@ def PSD_fitting(freq, PSD):
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, [1e2, 3e-6, 1e30])
+    optimal_parameters = minimize(likelihood_func, [1, 3e-6, 1])
     return optimal_parameters
 
 def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
@@ -97,9 +98,9 @@ def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
 def fit_data(dataset, avg=True):
     freqs = dataset[0]["frequency"][1:-1]
     if avg:
-        all_responses = np.array([item["responses"][1:-1] for item in dataset])
+        all_responses = np.array([item["psd"][1:-1] for item in dataset])
     else:
-        all_responses = dataset[0]["responses"][1:-1]
+        all_responses = dataset[0]["psd"][1:-1]
     PSD = np.mean(all_responses, axis=0)
 
     # freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)

@@ -1,6 +1,5 @@
-from config import *
 from scipy.fft import fft, ifft, fftfreq
-
+import numpy as np
 
 def compute_VACF(self, velocity_trace, transient=0.0):
     v = velocity_trace[int(transient * len(velocity_trace)):]
