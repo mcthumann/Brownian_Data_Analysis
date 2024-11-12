@@ -3,7 +3,7 @@ from scipy.fft import fft, ifft, fftfreq
 from nptdms import TdmsFile
 import numpy as np
 from analysis import autocorrelation, compute_VACF
-from config import ACF, BIN, SINC, SAMPLING_RATE, HAMMING, BIN_NUM, RECT_WINDOW, SAVE, SIM
+from config import ACF, BIN, SINC, SAMPLING_RATE, HAMMING, BIN_NUM, RECT_WINDOW, SAVE, SIM, tao_c, x_c, timestep
 import os
 import pandas as pd
 import pickle
@@ -146,10 +146,13 @@ def process_file(folder_name, trace_num, data_col, track_length, time_between_sa
     if HAMMING:
         series = apply_hamming_window(series)
 
-    frequency, local_response = scipy.signal.periodogram(series, 1 / (time_between_samples * bin_num), scaling="density")
+    if SIM:
+        frequency, psd = scipy.signal.periodogram(series, 1 / (timestep), scaling="density")
+        frequency /= tao_c
+        psd *= (x_c ** 2) * tao_c
+    else:
+        frequency, psd = scipy.signal.periodogram(series, 1 / (SAMPLING_RATE*bin_num), scaling="density")
     v_freq, v_psd_local = scipy.signal.periodogram(v_series, 1 / (time_between_samples * bin_num), scaling="density")
-    psd = 2*math.pi*local_response
-    plt.show()
     v_psd = np.sqrt(v_psd_local)
 
     if ACF:

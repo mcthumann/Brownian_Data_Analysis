@@ -30,13 +30,13 @@ def plot_psd(dataset, label, avg=True):
     else:
         all_responses = dataset[0]["psd"][1:-1]
     print("averaged " + str(len(dataset)) + " PSDs")
-    avg_response = np.mean(all_responses, axis=0)*((x_c**2)*tao_c)
+    avg_response = np.mean(all_responses, axis=0)
     plt.plot(dataset[0]["frequency"][1:-1], avg_response, label=label,
              linewidth=.25)
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
-    plt.title("Power Spectral Density")
+    plt.title("Power Spectral Density Data")
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Signal [V^2/Hz]")
 

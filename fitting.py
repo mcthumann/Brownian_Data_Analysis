@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import xscale
 from scipy.optimize import curve_fit
 from scipy.optimize import minimize
 import scipy
 import math
-from config import scale
+from config import scale, tao_c, x_c
 
 
 # Global Parameters
@@ -22,7 +23,7 @@ def PSD_fitting_func(omega, K, a, V):
     numerator = 2 * Const.k_b * Const.T * gamma_s * (1 + np.sqrt((1/2) * omega * tau_f))
     denominator = (K - omega * gamma_s * np.sqrt((1/2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
                 1 + np.sqrt((1/2) * omega * tau_f))**2
-    return (1/scale) * V * numerator / denominator
+    return V* numerator / denominator
 
 def VACF_fitting_func(t, m, K, a):
     t_k = (6 * math.pi * a * Const.eta)/K
@@ -81,7 +82,7 @@ def PSD_fitting(freq, PSD):
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, [1, 3e-6, 1])
+    optimal_parameters = minimize(likelihood_func, [.1, 6e-6, 10], bounds=[(1e-3,10.5), (1e-7, 4e-5), (0,100)])
     return optimal_parameters
 
 def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
@@ -95,6 +96,42 @@ def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
             PSD_range.append(PSD[i])
     return np.array(freq_range), np.array(PSD_range)
 
+
+def log_bin_psd(frequencies, psd_values, min_bound=1e4, max_bound=1e7, num_bins=50):
+    """
+    Log-bin the PSD values to avoid overweighting higher frequencies.
+
+    Parameters:
+        frequencies (np.ndarray): The frequency array from the PSD.
+        psd_values (np.ndarray): The PSD values corresponding to the frequencies.
+        min_bound (float): Minimum bound for log-binning.
+        max_bound (float): Maximum bound for log-binning.
+        num_bins (int): Number of bins in the log scale.
+
+    Returns:
+        binned_frequencies (np.ndarray): Binned frequencies (log-scaled).
+        binned_psd (np.ndarray): Averaged PSD values within each bin.
+    """
+    # Define log-spaced bins
+    bins = np.logspace(np.log10(min_bound), np.log10(max_bound), num_bins + 1)
+    binned_frequencies = []
+    binned_psd = []
+
+    # Loop through each bin and average the PSD values within the bin range
+    for i in range(len(bins) - 1):
+        # Get indices within the current bin
+        indices = np.where((frequencies >= bins[i]) & (frequencies < bins[i + 1]))[0]
+
+        # Compute average frequency and PSD value for this bin if indices are found
+        if len(indices) > 0:
+            avg_freq = np.mean(frequencies[indices])
+            avg_psd = np.mean(psd_values[indices])
+            binned_frequencies.append(avg_freq)
+            binned_psd.append(avg_psd)
+
+    return np.array(binned_frequencies), np.array(binned_psd)
+
+
 def fit_data(dataset, avg=True):
     freqs = dataset[0]["frequency"][1:-1]
     if avg:
@@ -104,7 +141,11 @@ def fit_data(dataset, avg=True):
     PSD = np.mean(all_responses, axis=0)
 
     # freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)
-    freq_r, PSD_r = freqs, PSD
+    freq_r, PSD_r = log_bin_psd(freqs, PSD, min_bound=1e4, max_bound=1e7, num_bins=500)
+    plt.plot(freq_r, PSD_r)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.show()
 
     optimal_parameters = PSD_fitting(freq_r, PSD_r)
     PSD_fit = PSD_fitting_func(freqs * 2 * np.pi, optimal_parameters.x[0], optimal_parameters.x[1],
