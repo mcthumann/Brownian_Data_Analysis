@@ -16,7 +16,7 @@ RECT_WINDOW = False
 BIN = False # IF FALSE SET BIN NUM to 1
 BIN_NUM = 1
 
-NUM_FILES = 5
+NUM_FILES = 3
 
 ACF = True
 

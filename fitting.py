@@ -19,8 +19,8 @@ def PSD_fitting_func(omega, K, a, V):
     gamma_s = 6 * math.pi * a * Const.eta
     tau_f = Const.rho_f * a ** 2 / Const.eta
     numerator = 2 * Const.k_b * Const.T * gamma_s * (1 + np.sqrt((1/2) * omega * tau_f))
-    denominator = (K - omega * gamma_s * np.sqrt((1/2) * omega * tau_f)) ** 2 + omega ** 2 * gamma_s ** 2 * (
-                1 + np.sqrt((1/2) * omega * tau_f)) ** 2
+    denominator = (K - omega * gamma_s * np.sqrt((1/2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
+                1 + np.sqrt((1/2) * omega * tau_f))**2
     return V * numerator / denominator
 
 def VACF_fitting_func(t, m, K, a):
@@ -41,12 +41,12 @@ def VACF_fitting_func(t, m, K, a):
     # Find the roots
     roots = np.roots(coefficients)
 
-    # Calculate the VACF
-    vacf = (Const.k_b * Const.T / m) * sum(
+    # Calculate the VACF ... may need (Const.k_b * Const.T / m) factor
+    vacf_complex = sum(
         (z ** 3 * np.exp(z ** 2 * t) * scipy.special.erfc(z * np.sqrt(t))) /
         (np.prod([z - z_j for z_j in roots if z != z_j])) for z in roots
     )
-    return vacf
+    return np.real(vacf_complex)
 
 
 def VACF_fitting(t, vacf_data, K, a):
@@ -80,7 +80,7 @@ def PSD_fitting(freq, PSD):
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, [1, 3e-6, 1000])
+    optimal_parameters = minimize(likelihood_func, [1e2, 3e-6, 1e30])
     return optimal_parameters
 
 def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
@@ -102,7 +102,8 @@ def fit_data(dataset, avg=True):
         all_responses = dataset[0]["responses"][1:-1]
     PSD = np.mean(all_responses, axis=0)
 
-    freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)
+    # freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)
+    freq_r, PSD_r = freqs, PSD
 
     optimal_parameters = PSD_fitting(freq_r, PSD_r)
     PSD_fit = PSD_fitting_func(freqs * 2 * np.pi, optimal_parameters.x[0], optimal_parameters.x[1],
