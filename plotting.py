@@ -2,7 +2,6 @@ import matplotlib
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 import numpy as np
-from config import *
 import platform
 
 if platform.system() == "Darwin":  # mac is identified as 'Darwin'

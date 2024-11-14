@@ -1,16 +1,30 @@
 from file_io import *
 from fitting import *
 from plotting import *
+from config import *
+from series_processing import process_series
+
 
 def run():
+
     folders = [""]
     for folder in folders:
         filename = folder + "_data.pkl"
 
-        results = check_and_load_or_process(
+        traces = check_and_load_or_process(
             filename,
-            BASE_PATH + folder, TRACKS_PER_FILE, NUM_FILES, TRACK_LENGTH, TIME_BETWEEN_SAMPLES, BIN_NUM
+            BASE_PATH + folder, TRACKS_PER_FILE, NUM_FILES
         )
+        print(traces)
+        results = []
+
+        for trace in traces:
+            conf = Config(**trace['args'])
+            result = process_series(trace['series'], conf)
+            results.append(result)
+
+        if SAVE:
+            save_results(results, filename)
 
         # Plot the data
         plot_results(results, folder)

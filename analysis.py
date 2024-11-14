@@ -14,14 +14,6 @@ def compute_VACF(self, velocity_trace, transient=0.0):
     acf /= np.arange(N, N - max_lag, -1)
     return acf
 
-def autocorrelation(signal):
-    print("autocorr")
-    # Using FFT for efficient computation of autocorrelation
-    f_signal = np.fft.fft(signal, n=2 * len(signal))
-    acf = np.fft.ifft(f_signal * np.conjugate(f_signal)).real[:len(signal)]
-    acf /= acf[1]
-    return acf
-
 # time = np.arange(0, len(series)) * TIME_BETWEEN_SAMPLES
 #
 # def gamma(omega):
