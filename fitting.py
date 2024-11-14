@@ -1,11 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import xscale
-from scipy.optimize import curve_fit
+from config import  MAX_BOUND,MIN_BOUND, NUM_LOG_BINS, K_GUESS, A_GUESS, V_GUESS
 from scipy.optimize import minimize
 import scipy
 import math
-from config import scale, tao_c, x_c
 
 
 # Global Parameters
@@ -26,6 +24,7 @@ def PSD_fitting_func(omega, K, a, V):
     return V* numerator / denominator
 
 def VACF_fitting_func(t, m, K, a):
+    t = t*(math.pi/2)
     t_k = (6 * math.pi * a * Const.eta)/K
     t_f = (Const.rho_f*a**2)/Const.eta
     t_p = m/(6 * math.pi * a * Const.eta)
@@ -82,7 +81,7 @@ def PSD_fitting(freq, PSD):
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, [.1, 6e-6, 10], bounds=[(1e-3,10.5), (1e-7, 4e-5), (0,100)])
+    optimal_parameters = minimize(likelihood_func, [K_GUESS, A_GUESS, V_GUESS], bounds=[(K_GUESS*1e-2,K_GUESS*1e2), (A_GUESS*1e-2,A_GUESS*1e2), (V_GUESS*1e-2,V_GUESS*1e2)])
     return optimal_parameters
 
 def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
@@ -97,7 +96,7 @@ def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
     return np.array(freq_range), np.array(PSD_range)
 
 
-def log_bin_psd(frequencies, psd_values, min_bound=1e4, max_bound=1e7, num_bins=50):
+def log_bin_psd(frequencies, psd_values, min_bound, max_bound, num_bins):
     """
     Log-bin the PSD values to avoid overweighting higher frequencies.
 
@@ -134,6 +133,8 @@ def log_bin_psd(frequencies, psd_values, min_bound=1e4, max_bound=1e7, num_bins=
 
 def fit_data(dataset, avg=True):
     freqs = dataset[0]["frequency"][1:-1]
+    times = dataset[0]["time"][1:-1]
+    vacf = dataset[0]["v_acf"][1:-1]
     if avg:
         all_responses = np.array([item["psd"][1:-1] for item in dataset])
     else:
@@ -141,7 +142,7 @@ def fit_data(dataset, avg=True):
     PSD = np.mean(all_responses, axis=0)
 
     # freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)
-    freq_r, PSD_r = log_bin_psd(freqs, PSD, min_bound=1e4, max_bound=1e7, num_bins=500)
+    freq_r, PSD_r = log_bin_psd(freqs, PSD, MIN_BOUND, MAX_BOUND, NUM_LOG_BINS)
     plt.plot(freq_r, PSD_r)
     plt.xscale("log")
     plt.yscale("log")
@@ -152,6 +153,9 @@ def fit_data(dataset, avg=True):
                                optimal_parameters.x[2])
 
     print("Parameters = ", optimal_parameters.x)
+
+
+
 
     plt.plot(freqs[1:], np.abs(PSD[1:]))
 
