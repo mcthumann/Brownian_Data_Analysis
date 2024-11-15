@@ -4,7 +4,6 @@ from scipy.fft import fft, ifft, fftfreq
 from config import ACF, BIN, SINC, HAMMING, BIN_NUM, RECT_WINDOW, SAVE, SIM
 
 def autocorrelation(signal):
-    print("autocorr")
     # Using FFT for efficient computation of autocorrelation
     f_signal = np.fft.fft(signal, n=2 * len(signal))
     acf = np.fft.ifft(f_signal * np.conjugate(f_signal)).real[:len(signal)]
@@ -13,7 +12,6 @@ def autocorrelation(signal):
 
 def bin_data(series, bin_size):
     # Ensuring the length of series is divisible by bin_size
-    print("Bin")
     length = len(series) - len(series) % bin_size
     series = np.array(series[:length])
     return np.mean(series.reshape(-1, bin_size), axis=1)
@@ -73,7 +71,6 @@ def apply_hamming_window(signal):
     """
     Applies a Hamming window to the signal.
     """
-    print("HAMMING")
     hamming_window = np.hamming(len(signal))
     return signal * hamming_window
 
@@ -87,7 +84,11 @@ def rect_window_filter(signal, bin_size):
 
 def process_series(series, conf):
     ## new function ...
-    time = np.arange(0, len(series)) * 1
+    time = np.arange(0, len(series))
+    time = time * (conf.timestep)
+
+    if SIM:
+        time = time * conf.t_c
 
     # Low pass before finding the time trace for position and velocity
     if BIN:

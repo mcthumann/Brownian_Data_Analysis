@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from config import  MAX_BOUND,MIN_BOUND, NUM_LOG_BINS, K_GUESS, A_GUESS, V_GUESS
+from config import  MAX_BOUND,MIN_BOUND, NUM_LOG_BINS, K_GUESS, A_GUESS, V_GUESS, M_GUESS
 from scipy.optimize import minimize
 import scipy
 import math
+import scipy.constants as const
 
 
 # Global Parameters
@@ -42,28 +43,28 @@ def VACF_fitting_func(t, m, K, a):
     # Find the roots
     roots = np.roots(coefficients)
 
-    # Calculate the VACF ... may need (Const.k_b * Const.T / m) factor
-    vacf_complex = sum(
-        (z ** 3 * np.exp(z ** 2 * t) * scipy.special.erfc(z * np.sqrt(t))) /
+    vacf_complex = 1e-7 *sum(
+        (z ** 3 * scipy.special.erfcx(z * np.sqrt(t))) /
         (np.prod([z - z_j for z_j in roots if z != z_j])) for z in roots
     )
     return np.real(vacf_complex)
 
 
 def VACF_fitting(t, vacf_data, K, a):
-    # This function does the actual fitting, fitting only for m
+    # This function does the fitting, fitting only for mass
 
-    def likelihood_func(x):
+    def least_squares_func(x):
         # Fit for mass only, using K and a as constants
         m = x[0]
         vacf_model = VACF_fitting_func(t, m, K, a)
-        return np.sum(vacf_data / vacf_model + np.log(vacf_model))
+        # Least squares: minimize the sum of squared differences
+        return np.sum((vacf_data - vacf_model) ** 2)
 
     # Initial guess for mass
-    initial_guess = [3e-12]
+    initial_guess = [M_GUESS]
 
-    # Optimize
-    optimal_parameters = minimize(likelihood_func, initial_guess)
+    # Optimize using least squares
+    optimal_parameters = minimize(least_squares_func, initial_guess)
     return optimal_parameters
 
 def PSD_fitting(freq, PSD):
@@ -134,7 +135,8 @@ def log_bin_psd(frequencies, psd_values, min_bound, max_bound, num_bins):
 def fit_data(dataset, avg=True):
     freqs = dataset[0]["frequency"][1:-1]
     times = dataset[0]["time"][1:-1]
-    vacf = dataset[0]["v_acf"][1:-1]
+    vacf = dataset[0]["v_acf"]
+
     if avg:
         all_responses = np.array([item["psd"][1:-1] for item in dataset])
     else:
@@ -154,13 +156,20 @@ def fit_data(dataset, avg=True):
 
     print("Parameters = ", optimal_parameters.x)
 
+    plt.plot(freqs[1:], PSD[1:])
 
-
-
-    plt.plot(freqs[1:], np.abs(PSD[1:]))
-
-    plt.plot(freqs[1:], np.abs(PSD_fit[1:]), label="fit")
+    plt.plot(freqs[1:], PSD_fit[1:], label="fit")
     plt.legend()
     plt.xscale("log")
     plt.yscale("log")
+    plt.show()
+
+    optimal_mass = VACF_fitting(times, vacf[1:], optimal_parameters.x[0], optimal_parameters.x[1])
+    vacf_fit = VACF_fitting_func(times, optimal_mass.x[0], 10, 3e-6)
+    print("MASS FOUND = ", optimal_mass.x[0])
+
+    plt.plot(times, vacf[1:])
+    plt.plot(times, vacf_fit/(const.k * 293 / 3.82e-14), label="fit")
+    plt.xscale("log")
+    plt.legend()
     plt.show()

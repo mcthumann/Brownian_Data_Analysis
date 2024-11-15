@@ -1,3 +1,5 @@
+import numpy as np
+
 from file_io import *
 from fitting import *
 from plotting import *
@@ -15,7 +17,6 @@ def run():
             filename,
             BASE_PATH + folder, TRACKS_PER_FILE, NUM_FILES
         )
-        print(traces)
         results = []
 
         for trace in traces:
@@ -29,25 +30,18 @@ def run():
         # Plot the data
         plot_results(results, folder)
 
-        K = 1  # Example trap strength
+        K = 10  # Example trap strength
         a = 3e-6  # Example particle radius in meters
-        V = 1  # Example voltage-to-position conversion factor
+        m = 3.8170350741115986e-14
 
-        # Frequency range
-        frequencies = np.logspace(5, 10, 5000)  # Logarithmic frequency range from 10^1 to 10^7
-        omega = 2 * np.pi * frequencies  # Convert to angular frequency
-
+        times = np.logspace(-10, -5, 6000)
         # Calculate PSD
-        psd_values = PSD_fitting_func(omega, K, a, V)
-
+        vacf_values = VACF_fitting_func(times, m, K, a)
         # Plot
-        plt.plot(frequencies, psd_values, label='PSD')
+        plt.plot(times, vacf_values/(const.k * 293 / 3.82e-14), label='vacf')
         plt.xscale('log')
-        plt.yscale('log')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('PSD')
-        plt.title('Power Spectral Density (PSD)')
         plt.legend()
+        plt.title('VACF function test')
         plt.show()
 
         # Fit the results

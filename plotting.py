@@ -78,7 +78,6 @@ def plot_pacf(dataset, label, avg=True):
     plt.title("Position Autocorrelation Function")
     plt.xlabel("Normalized PACF")
     plt.ylabel("Time")
-    print("PACF")
 
 def plot_vacf(dataset, label, avg=True):
     if avg:
@@ -95,4 +94,3 @@ def plot_vacf(dataset, label, avg=True):
     plt.title("Velocity Autocorrelation Function")
     plt.xlabel("Normalized VACF")
     plt.ylabel("Time")
-    print("VACF")
