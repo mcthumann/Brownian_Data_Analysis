@@ -10,6 +10,21 @@ def autocorrelation(signal):
     acf /= acf[1]
     return acf
 
+
+def autocorrelation_time_domain(signal, lags):
+    auto_correlation = np.zeros(lags)
+    for i in range(0, lags):
+        counter = 0
+        for j in range(len(signal)-i-1):
+            auto_correlation[i] += signal[j]*signal[i+j]#*signal[i+j]**2
+            counter+=1
+
+        auto_correlation[i] /=counter
+    
+    auto_correlation[0] = np.average(signal**2)
+    return auto_correlation
+
+
 def bin_data(series, bin_size):
     # Ensuring the length of series is divisible by bin_size
     length = len(series) - len(series) % bin_size
@@ -117,8 +132,12 @@ def process_series(series, conf):
     v_psd = np.sqrt(v_psd_local)
 
     if ACF:
-        acf = autocorrelation(series)
-        v_acf = autocorrelation(v_series)
+        if ACF_TIME:
+            acf = autocorrelation_time_domain(series, LAGS)
+            v_acf = autocorrelation_time_domain(v_series, LAGS)
+        else:
+            acf = autocorrelation(series)
+            v_acf = autocorrelation(v_series)
     else:
         acf = 0
         v_acf = 0

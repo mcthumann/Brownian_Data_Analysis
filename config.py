@@ -19,6 +19,8 @@ A_GUESS = 3e-6
 V_GUESS = 1
 
 ACF = True
+ACF_TIME = True
+LAGS = 100
 
 SINC = False
 HAMMING = False
