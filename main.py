@@ -27,22 +27,24 @@ def run():
         if SAVE:
             save_results(results, filename)
 
-        # Plot the data
+        # # Plot the data
         plot_results(results, folder)
-
-        K = 10  # Example trap strength
-        a = 3e-6  # Example particle radius in meters
-        m = 3.8170350741115986e-14
-
-        times = np.logspace(-10, -5, 6000)
-        # Calculate PSD
-        vacf_values = VACF_fitting_func(times, m, K, a)
-        # Plot
-        plt.plot(times, vacf_values/(const.k * 293 / 3.82e-14), label='vacf')
-        plt.xscale('log')
-        plt.legend()
-        plt.title('VACF function test')
-        plt.show()
+        # for m in np.logspace(-15, -12, 20):
+        #     K = 1e-1  # Example trap strength
+        #     a = 3e-6  # Example particle radius in meters
+        #     # m = 3.8170350741115986e-14
+        #
+        #     times = np.logspace(-10, -5, 6000)
+        #     # Calculate PSD
+        #     vacf_values = VACF_fitting_func(times, m, K, a)
+        #
+        #     # Plot
+        #     plt.plot(times, vacf_values, label='mass'+str(m))
+        # # plt.legend()
+        # plt.xscale('log')
+        #
+        # plt.title('VACF 2 function test')
+        # plt.show()
 
         # Fit the results
         fit_data(results)

@@ -2,21 +2,26 @@ import math
 import scipy.constants as const
 
 SIM = True
+SAMPLE = 100
+
 SAVE = False
 BASE_PATH = r"C:\Users\Cole Thumann\Desktop\Lab_Repos\MarkovianEmbedding\position_velocity_data.csv"
-# BASE_PATH = r"C:\Users\Cole Thumann\Desktop\LabData\20241107\high power_last"
+# BASE_PATH = r"\\tsclient\TESTFOLDER\20241114\1_5"
 
 NUM_FILES = 1
 TRACKS_PER_FILE = 1
 
 # PSD FIT PARAMS
-MIN_BOUND=1e4
+MIN_BOUND=1e3
 MAX_BOUND=1e7
 NUM_LOG_BINS=500
+
 # initial Guesses
 K_GUESS = 1
 A_GUESS = 3e-6
 V_GUESS = 1
+
+M_GUESS = 5e-14
 
 ACF = True
 
@@ -39,7 +44,6 @@ class Config:
             stop=None,
             start=None
     ):
-        print("A is " +str(a))
         self.a = a
         self.eta = eta
         self.rho_silica = rho_silica

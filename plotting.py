@@ -3,11 +3,12 @@ import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 import numpy as np
 import platform
+from config import ACF
 
 if platform.system() == "Darwin":  # mac is identified as 'Darwin'
     matplotlib.use('TkAgg')
 
-def plot_results(results, label, psd=True, pacf=True, vacf=True):
+def plot_results(results, label, psd=True):
     plt.gca().yaxis.set_major_formatter(ticker.LogFormatter(base=10))
     if psd:
         # plot_best_psds(results, "PSD " + str(10), 10)
@@ -16,10 +17,10 @@ def plot_results(results, label, psd=True, pacf=True, vacf=True):
         # plot_best_psds(results, "PSD " + str(50), 50)
         plot_psd(results, label="PSD " + label)
         plt.show()
-    if pacf:
+    if ACF:
         plot_pacf(results, label="PACF " + label)
         plt.show()
-    if vacf:
+
         plot_vacf(results, label="VACF " + label)
         plt.show()
 
@@ -91,6 +92,6 @@ def plot_vacf(dataset, label, avg=True):
              linewidth=1)
     plt.xscale("log")
     plt.legend()
-    plt.title("Velocity Autocorrelation Function")
-    plt.xlabel("Normalized VACF")
-    plt.ylabel("Time")
+    plt.title("VACF")
+    plt.xlabel("Time")
+    plt.ylabel("VACF")

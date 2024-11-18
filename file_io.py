@@ -2,7 +2,7 @@ from nptdms import TdmsFile
 import os
 import pandas as pd
 import pickle
-from config import SIM
+from config import SIM, SAMPLE
 
 def read_tdms_file(file_path, data_col):
     tdms_file = TdmsFile.read(file_path)
@@ -25,15 +25,17 @@ def read_csv_file(file_path, data_col):
     if data_col - 1 < len(position_columns):
         position_col = position_columns[data_col - 1]
         series = df[position_col].iloc[:]
+        series = series[::SAMPLE]
         # Extract arguments from CSV
         a = df["a"].iloc[0] if "a" in df.columns else 5e-6
         eta = df["eta"].iloc[0] if "eta" in df.columns else 1e-3
         rho_silica = df["rho_silica"].iloc[0] if "rho_silica" in df.columns else 2200
         rho_f = df["rho_f"].iloc[0] if "rho_f" in df.columns else 1000
         sampling_rate = df["sampling_rate"].iloc[0] if "sampling_rate" in df.columns else 10000
+        sampling_rate /= SAMPLE
         track_len = len(series)  # Length of the series
-        stop = df["stop"].iloc[0] if "stop" in df.columns else None
-        start = df["start"].iloc[0] if "start" in df.columns else None
+        # stop = df["stop"].iloc[0] if "stop" in df.columns else None
+        # start = df["start"].iloc[0] if "start" in df.columns else None
 
         config_args = {
             "a": a,
@@ -42,8 +44,8 @@ def read_csv_file(file_path, data_col):
             "rho_f": rho_f,
             "sampling_rate": sampling_rate,
             "track_len": track_len,
-            "stop": stop,
-            "start": start,
+            # "stop": stop,
+            # "start": start,
         }
 
         return series, config_args

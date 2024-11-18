@@ -1,7 +1,17 @@
 import numpy as np
 import scipy
+from tqdm import tqdm
 from scipy.fft import fft, ifft, fftfreq
-from config import ACF, BIN, SINC, HAMMING, BIN_NUM, RECT_WINDOW, SAVE, SIM
+from config import ACF, BIN, SINC, HAMMING, BIN_NUM, RECT_WINDOW, SAMPLE, SIM
+
+
+def compute_VACF_time_domain(v_series):
+    n = len(v_series)
+    vacf = np.zeros(n)
+    for lag in tqdm(range(n), desc="VACF Compute"):
+        vacf[lag] = np.dot(v_series[:n - lag], v_series[lag:]) / (
+                n - lag)  # Normalize by number of overlapping terms
+    return vacf
 
 def autocorrelation(signal):
     # Using FFT for efficient computation of autocorrelation
@@ -19,7 +29,8 @@ def bin_data(series, bin_size):
 def downsample_log_space(xdata, ydata, num_bins):
     # Logarithmically space the bins
     log_bins = np.logspace(np.log10(xdata[0]), np.log10(xdata[-1]), num_bins)
-    # Digitize the data (assign each data point to a bin)
+    # Digitize the data
+    # (assign each data point to a bin)
     bin_indices = np.digitize(xdata, log_bins)
     # Calculate the average x and y for each bin
     xdata_binned = [xdata[bin_indices == i].mean() for i in range(1, len(log_bins))]
@@ -108,9 +119,9 @@ def process_series(series, conf):
         series = apply_hamming_window(series)
 
     if SIM:
-        frequency, psd = scipy.signal.periodogram(series, 1 / (conf.timestep), scaling="density")
+        frequency, psd = scipy.signal.periodogram(series, 1 / (conf.timestep * SAMPLE), scaling="density")
         frequency /= conf.t_c
-        psd *= (conf.x_c ** 2) * conf.t_c
+        psd *= conf.t_c
     else:
         frequency, psd = scipy.signal.periodogram(series, 1 / (conf.sampling_rate*BIN_NUM), scaling="density")
     v_freq, v_psd_local = scipy.signal.periodogram(v_series, 1 / (conf.timestep * BIN_NUM), scaling="density")
@@ -118,7 +129,8 @@ def process_series(series, conf):
 
     if ACF:
         acf = autocorrelation(series)
-        v_acf = autocorrelation(v_series)
+        v_acf = compute_VACF_time_domain(v_series)
+
     else:
         acf = 0
         v_acf = 0

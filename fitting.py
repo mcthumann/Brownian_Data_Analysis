@@ -43,7 +43,7 @@ def VACF_fitting_func(t, m, K, a):
     # Find the roots
     roots = np.roots(coefficients)
 
-    vacf_complex = 1e-7 *sum(
+    vacf_complex = (const.k * 293 / m) * sum(
         (z ** 3 * scipy.special.erfcx(z * np.sqrt(t))) /
         (np.prod([z - z_j for z_j in roots if z != z_j])) for z in roots
     )
@@ -164,12 +164,12 @@ def fit_data(dataset, avg=True):
     plt.yscale("log")
     plt.show()
 
-    optimal_mass = VACF_fitting(times, vacf[1:], optimal_parameters.x[0], optimal_parameters.x[1])
-    vacf_fit = VACF_fitting_func(times, optimal_mass.x[0], 10, 3e-6)
+    optimal_mass = VACF_fitting(times, vacf[1:], 1e-1, 3e-6)
+    vacf_fit = VACF_fitting_func(times, optimal_mass.x[0], 1e-1, 3e-6)
     print("MASS FOUND = ", optimal_mass.x[0])
 
     plt.plot(times, vacf[1:])
-    plt.plot(times, vacf_fit/(const.k * 293 / 3.82e-14), label="fit")
+    plt.plot(times, vacf_fit, label="fit")
     plt.xscale("log")
     plt.legend()
     plt.show()
