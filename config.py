@@ -21,7 +21,7 @@ K_GUESS = 1
 A_GUESS = 3e-6
 V_GUESS = 1
 
-M_GUESS = 5e-14
+M_GUESS = 9e-14
 
 ACF = True
 

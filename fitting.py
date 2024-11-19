@@ -5,6 +5,7 @@ from scipy.optimize import minimize
 import scipy
 import math
 import scipy.constants as const
+from numpy.polynomial import Polynomial
 
 
 # Global Parameters
@@ -25,13 +26,13 @@ def PSD_fitting_func(omega, K, a, V):
     return V* numerator / denominator
 
 def VACF_fitting_func(t, m, K, a):
-    t = t*(math.pi/2)
-    t_k = (6 * math.pi * a * Const.eta)/K
-    t_f = (Const.rho_f*a**2)/Const.eta
-    t_p = m/(6 * math.pi * a * Const.eta)
+    t = t * (math.pi / 2)
+    t_k = (6 * math.pi * a * Const.eta) / K
+    t_f = (Const.rho_f * a ** 2) / Const.eta
+    t_p = m / (6 * math.pi * a * Const.eta)
     # find roots
     # a * z^4 + b * z^3 + c * z^2 + d * z + e = 0
-    a = t_p + (1/9.0)*t_f
+    a = t_p + (1 / 9.0) * t_f
     b = -np.sqrt(t_f)
     c = 1
     d = 0
@@ -54,18 +55,24 @@ def VACF_fitting(t, vacf_data, K, a):
     # This function does the fitting, fitting only for mass
 
     def least_squares_func(x):
-        # Fit for mass only, using K and a as constants
-        m = x[0]
+        m = x[0] * 1e-14
         vacf_model = VACF_fitting_func(t, m, K, a)
-        # Least squares: minimize the sum of squared differences
-        return np.sum((vacf_data - vacf_model) ** 2)
+        residuals = (vacf_data - vacf_model) * 1e12  # Rescale to avoid underflow
+        return np.sum(residuals ** 2)
 
-    # Initial guess for mass
-    initial_guess = [M_GUESS]
+    initial_guess = [1.0]  # Scaled initial guess
+    bounds = [(1e-3, 1e6)]
 
     # Optimize using least squares
-    optimal_parameters = minimize(least_squares_func, initial_guess)
-    return optimal_parameters
+    optimal_parameters = minimize(
+        least_squares_func,
+        initial_guess,
+        method='Nelder-Mead',
+        bounds=bounds,
+        options={"disp": True, "maxiter": 1000}
+    )
+    print(optimal_parameters.success, optimal_parameters.message)
+    return optimal_parameters.x[0]*1e-14
 
 def PSD_fitting(freq, PSD):
     # This function does the actual fitting
@@ -97,39 +104,25 @@ def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
     return np.array(freq_range), np.array(PSD_range)
 
 
-def log_bin_psd(frequencies, psd_values, min_bound, max_bound, num_bins):
-    """
-    Log-bin the PSD values to avoid overweighting higher frequencies.
-
-    Parameters:
-        frequencies (np.ndarray): The frequency array from the PSD.
-        psd_values (np.ndarray): The PSD values corresponding to the frequencies.
-        min_bound (float): Minimum bound for log-binning.
-        max_bound (float): Maximum bound for log-binning.
-        num_bins (int): Number of bins in the log scale.
-
-    Returns:
-        binned_frequencies (np.ndarray): Binned frequencies (log-scaled).
-        binned_psd (np.ndarray): Averaged PSD values within each bin.
-    """
+def log_bin_array(x, y, min_bound, max_bound, num_bins):
     # Define log-spaced bins
     bins = np.logspace(np.log10(min_bound), np.log10(max_bound), num_bins + 1)
-    binned_frequencies = []
-    binned_psd = []
+    binned_x = []
+    binned_y = []
 
     # Loop through each bin and average the PSD values within the bin range
     for i in range(len(bins) - 1):
         # Get indices within the current bin
-        indices = np.where((frequencies >= bins[i]) & (frequencies < bins[i + 1]))[0]
+        indices = np.where((x >= bins[i]) & (x < bins[i + 1]))[0]
 
         # Compute average frequency and PSD value for this bin if indices are found
         if len(indices) > 0:
-            avg_freq = np.mean(frequencies[indices])
-            avg_psd = np.mean(psd_values[indices])
-            binned_frequencies.append(avg_freq)
-            binned_psd.append(avg_psd)
+            avg_freq = np.mean(x[indices])
+            avg_psd = np.mean(y[indices])
+            binned_x.append(avg_freq)
+            binned_y.append(avg_psd)
 
-    return np.array(binned_frequencies), np.array(binned_psd)
+    return np.array(binned_x), np.array(binned_y)
 
 
 def fit_data(dataset, avg=True):
@@ -144,7 +137,7 @@ def fit_data(dataset, avg=True):
     PSD = np.mean(all_responses, axis=0)
 
     # freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)
-    freq_r, PSD_r = log_bin_psd(freqs, PSD, MIN_BOUND, MAX_BOUND, NUM_LOG_BINS)
+    freq_r, PSD_r = log_bin_array(freqs, PSD, MIN_BOUND, MAX_BOUND, NUM_LOG_BINS)
     plt.plot(freq_r, PSD_r)
     plt.xscale("log")
     plt.yscale("log")
@@ -164,9 +157,13 @@ def fit_data(dataset, avg=True):
     plt.yscale("log")
     plt.show()
 
-    optimal_mass = VACF_fitting(times, vacf[1:], 1e-1, 3e-6)
-    vacf_fit = VACF_fitting_func(times, optimal_mass.x[0], 1e-1, 3e-6)
-    print("MASS FOUND = ", optimal_mass.x[0])
+    times_l, vacf_l = log_bin_array(times, vacf, 10**-9, 10**-4, 100)
+    plt.plot(times_l, vacf_l)
+    plt.xscale("log")
+    plt.show()
+    optimal_mass = VACF_fitting(times_l, vacf_l, 1e-1, 3e-6)
+    vacf_fit = VACF_fitting_func(times, optimal_mass, 1e-1, 3e-6)
+    print("MASS FOUND = ", optimal_mass)
 
     plt.plot(times, vacf[1:])
     plt.plot(times, vacf_fit, label="fit")
