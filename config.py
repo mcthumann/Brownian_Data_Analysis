@@ -2,7 +2,7 @@ import math
 import scipy.constants as const
 
 SIM = True
-SAMPLE = 100
+SAMPLE = 1000
 
 SAVE = False
 BASE_PATH = r"C:\Users\Cole Thumann\Desktop\Lab_Repos\MarkovianEmbedding\position_velocity_data.csv"
@@ -13,7 +13,7 @@ TRACKS_PER_FILE = 1
 
 # PSD FIT PARAMS
 MIN_BOUND=1e3
-MAX_BOUND=1e7
+MAX_BOUND=1e6
 NUM_LOG_BINS=500
 
 # initial Guesses

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from config import  MAX_BOUND,MIN_BOUND, NUM_LOG_BINS, K_GUESS, A_GUESS, V_GUESS, M_GUESS
+from config import MAX_BOUND, MIN_BOUND, NUM_LOG_BINS, K_GUESS, A_GUESS, V_GUESS, M_GUESS, SAMPLE
 from scipy.optimize import minimize
 import scipy
 import math
@@ -139,6 +139,7 @@ def fit_data(dataset, avg=True):
     # freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)
     freq_r, PSD_r = log_bin_array(freqs, PSD, MIN_BOUND, MAX_BOUND, NUM_LOG_BINS)
     plt.plot(freq_r, PSD_r)
+    plt.title("PSD LOG BINNING")
     plt.xscale("log")
     plt.yscale("log")
     plt.show()

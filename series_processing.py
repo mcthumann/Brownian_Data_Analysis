@@ -119,7 +119,8 @@ def process_series(series, conf):
         series = apply_hamming_window(series)
 
     if SIM:
-        frequency, psd = scipy.signal.periodogram(series, 1 / (conf.timestep * SAMPLE), scaling="density")
+        frequency, psd = scipy.signal.periodogram(series, 1/conf.timestep, scaling="density")
+        print("SAPMLING RATE INCLUDED")
         frequency /= conf.t_c
         psd *= conf.t_c
     else:
