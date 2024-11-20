@@ -120,11 +120,10 @@ def process_series(series, conf):
 
     if SIM:
         frequency, psd = scipy.signal.periodogram(series, 1/conf.timestep, scaling="density")
-        print("SAPMLING RATE INCLUDED")
         frequency /= conf.t_c
         psd *= conf.t_c
     else:
-        frequency, psd = scipy.signal.periodogram(series, 1 / (conf.sampling_rate*BIN_NUM), scaling="density")
+        frequency, psd = scipy.signal.periodogram(series, conf.sampling_rate/BIN_NUM, scaling="density")
     v_freq, v_psd_local = scipy.signal.periodogram(v_series, 1 / (conf.timestep * BIN_NUM), scaling="density")
     v_psd = np.sqrt(v_psd_local)
 
@@ -139,6 +138,14 @@ def process_series(series, conf):
     second_moment = np.average(series ** 2)
 
     return {
+        "sampling_rate": conf.sampling_rate,
+        "track_len": conf.track_len,
+        "a": conf.a,
+        "eta": conf.eta,
+        "rho_silica": conf.rho_silica,
+        "rho_f": conf.rho_f,
+        "stop": conf.stop,
+        "start": conf.start,
         "series": series,
         "time": time,
         "frequency": frequency,

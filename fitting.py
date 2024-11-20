@@ -1,10 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from joblib.parallel import method
+
 from config import MAX_BOUND, MIN_BOUND, NUM_LOG_BINS, K_GUESS, A_GUESS, V_GUESS, M_GUESS, SAMPLE
 from scipy.optimize import minimize
 import scipy
 import math
 import scipy.constants as const
+from config import Config
 from numpy.polynomial import Polynomial
 
 
@@ -15,17 +18,17 @@ class Const:
     T = 293
     k_b = scipy.constants.k
 
-def PSD_fitting_func(omega, K, a, V):
+def PSD_fitting_func(omega, m, K, a, V):
     # This is the PSD we look to fit.  We fit for 3 parameters
     # Namely, we fit for the trap strength K, the radius of the particle a, and the voltage to position conversion V
     gamma_s = 6 * math.pi * a * Const.eta
     tau_f = Const.rho_f * a ** 2 / Const.eta
     numerator = 2 * Const.k_b * Const.T * gamma_s * (1 + np.sqrt((1/2) * omega * tau_f))
-    denominator = (K - omega * gamma_s * np.sqrt((1/2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
+    denominator = (m*((K/m)-omega**2) - omega * gamma_s * np.sqrt((1 / 2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
                 1 + np.sqrt((1/2) * omega * tau_f))**2
     return V* numerator / denominator
 
-def VACF_fitting_func(t, m, K, a):
+def VACF_fitting_func(t, m, K, a, V=1.0):
     t = t * (math.pi / 2)
     t_k = (6 * math.pi * a * Const.eta) / K
     t_f = (Const.rho_f * a ** 2) / Const.eta
@@ -44,37 +47,47 @@ def VACF_fitting_func(t, m, K, a):
     # Find the roots
     roots = np.roots(coefficients)
 
-    vacf_complex = (const.k * 293 / m) * sum(
+    vacf_complex = V**2 * (const.k * 293 / m) * sum(
         (z ** 3 * scipy.special.erfcx(z * np.sqrt(t))) /
         (np.prod([z - z_j for z_j in roots if z != z_j])) for z in roots
     )
     return np.real(vacf_complex)
 
 
-def VACF_fitting(t, vacf_data, K, a):
+def VACF_fitting(t, vacf_data, K, a, V, alpha):
     # This function does the fitting, fitting only for mass
 
     def least_squares_func(x):
         m = x[0] * 1e-14
-        vacf_model = VACF_fitting_func(t, m, K, a)
+        vacf_model = VACF_fitting_func(t, m, x[1], a, x[2])
         residuals = (vacf_data - vacf_model) * 1e12  # Rescale to avoid underflow
-        return np.sum(residuals ** 2)
+        # Apply exponential weighting
 
-    initial_guess = [1.0]  # Scaled initial guess
-    bounds = [(1e-3, 1e6)]
+        weights = np.exp(-alpha * t)
+        weighted_residuals = weights * residuals * 1e15  # Rescale to avoid underflow
 
+        return np.sum(weighted_residuals ** 2)
+
+    initial_guess = [1.0, K, V]  # Scaled initial guess
+    bounds = [(1e-3, 1e6), (K*1e-4, K*1e4), (V*1e-2, V*1e2)]
+    options = {
+        "disp": True,  # Display iteration details
+        "maxiter": 50000,
+        "xatol": 1e-5,
+        "fatol": 1e-5
+    }
     # Optimize using least squares
     optimal_parameters = minimize(
         least_squares_func,
         initial_guess,
         method='Nelder-Mead',
         bounds=bounds,
-        options={"disp": True, "maxiter": 1000}
+        options=options
     )
     print(optimal_parameters.success, optimal_parameters.message)
-    return optimal_parameters.x[0]*1e-14
+    return optimal_parameters.x[0]*1e-14, optimal_parameters.x[1], optimal_parameters.x[2]
 
-def PSD_fitting(freq, PSD):
+def PSD_fitting(freq, PSD, a):
     # This function does the actual fitting
 
     def likelihood_func(x):
@@ -84,12 +97,13 @@ def PSD_fitting(freq, PSD):
         # at its derivation for Brownian motion can be seen in Henrik's 2018 paper
         # The exact for depends on the type of noise; this one works for the gamma
         # distributed noise we expect from Brownian motion spectra
-        P = PSD_fitting_func(freq * 2 * np.pi, x[0], x[1], x[2])
+        P = PSD_fitting_func(freq * 2 * np.pi, x[0]*1e-14, x[1], a, x[2])
         return np.sum(PSD / (P) + np.log(P))
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, [K_GUESS, A_GUESS, V_GUESS], bounds=[(K_GUESS*1e-2,K_GUESS*1e2), (A_GUESS*1e-2,A_GUESS*1e2), (V_GUESS*1e-2,V_GUESS*1e2)])
+    optimal_parameters = minimize(likelihood_func, np.array([M_GUESS*1e14, K_GUESS, V_GUESS]), bounds=[(M_GUESS*1e12, M_GUESS*1e16),(K_GUESS*1e-2,K_GUESS*1e2), (V_GUESS*1e-2,V_GUESS*1e2)], method='Powell', options={'disp': True})
+    print(optimal_parameters.success, optimal_parameters.message)
     return optimal_parameters
 
 def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
@@ -125,30 +139,39 @@ def log_bin_array(x, y, min_bound, max_bound, num_bins):
     return np.array(binned_x), np.array(binned_y)
 
 
-def fit_data(dataset, avg=True):
+def fit_data(dataset, conf, avg=True):
     freqs = dataset[0]["frequency"][1:-1]
     times = dataset[0]["time"][1:-1]
-    vacf = dataset[0]["v_acf"]
 
     if avg:
         all_responses = np.array([item["psd"][1:-1] for item in dataset])
+        vacf_ = np.array([item["v_acf"] for item in dataset])
     else:
         all_responses = dataset[0]["psd"][1:-1]
+        vacf_ = dataset[0]["v_acf"]
+
     PSD = np.mean(all_responses, axis=0)
+    vacf = np.mean(vacf_, axis=0)
 
     # freq_r, PSD_r = select_freq_range(freqs, PSD, 10**2, 10 **5)
     freq_r, PSD_r = log_bin_array(freqs, PSD, MIN_BOUND, MAX_BOUND, NUM_LOG_BINS)
-    plt.plot(freq_r, PSD_r)
-    plt.title("PSD LOG BINNING")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.show()
+    # freq_r, PSD_r = freqs, PSD
 
-    optimal_parameters = PSD_fitting(freq_r, PSD_r)
-    PSD_fit = PSD_fitting_func(freqs * 2 * np.pi, optimal_parameters.x[0], optimal_parameters.x[1],
-                               optimal_parameters.x[2])
+    # plt.plot(freq_r, PSD_r)
+    # plt.title("PSD LOG BINNING")
+    # plt.xscale("log")
+    # plt.yscale("log")
+    # plt.show()
+
+    optimal_parameters = PSD_fitting(freq_r, PSD_r, conf.a)
+    optimal_parameters.x[0] = optimal_parameters.x[0]*1e-14
+    PSD_fit = PSD_fitting_func(freqs * 2 * np.pi, optimal_parameters.x[0], optimal_parameters.x[1], conf.a, optimal_parameters.x[2])
 
     print("Parameters = ", optimal_parameters.x)
+    plt.text(0.1, 0.1, f"Optimal Values:\nMass = {optimal_parameters.x[0]}\nK = {optimal_parameters.x[1]}\nA = {conf.a}\nV = {optimal_parameters.x[2]}",
+             fontsize=8, ha='left', va='bottom', transform=plt.gca().transAxes)
+    plt.text(0.1, 0.3, f"True Values:\nMass = {conf.mass_total}\nK = {.1}\nA = {conf.a}\nV = {1}",
+             fontsize=8, ha='left', va='bottom', transform=plt.gca().transAxes)
 
     plt.plot(freqs[1:], PSD[1:])
 
@@ -158,16 +181,40 @@ def fit_data(dataset, avg=True):
     plt.yscale("log")
     plt.show()
 
-    times_l, vacf_l = log_bin_array(times, vacf, 10**-9, 10**-4, 100)
-    plt.plot(times_l, vacf_l)
-    plt.xscale("log")
-    plt.show()
-    optimal_mass = VACF_fitting(times_l, vacf_l, 1e-1, 3e-6)
-    vacf_fit = VACF_fitting_func(times, optimal_mass, 1e-1, 3e-6)
-    print("MASS FOUND = ", optimal_mass)
+    # Log binning turned off to overweight the low lags (where mass is sensitive)
+    # times_l, vacf_l = log_bin_array(times, vacf, 10**-9, 10**-4, 300)
+    times_l, vacf_l = times, vacf[1:]
 
-    plt.plot(times, vacf[1:])
-    plt.plot(times, vacf_fit, label="fit")
-    plt.xscale("log")
-    plt.legend()
+    alpha = 5e5  # Adjust this value based on your weighting preference
+    weights = 100*np.exp(-alpha * times_l)
+
+    optimal_mass, k_, V_ = VACF_fitting(times_l, vacf_l, 1e-1, conf.a, 1.0, alpha=alpha)
+    vacf_fit = VACF_fitting_func(times, optimal_mass, k_, conf.a, V_)
+    vacf_true = VACF_fitting_func(times, conf.mass_total, .1, conf.a, 1)
+    # Create the plot
+    fig, ax1 = plt.subplots()
+
+    ax1.text(0.1, 0.1, f"Optimal Values:\nMass = {optimal_mass}\nK = {k_}\nA = {conf.a}\nV = {V_}",
+             fontsize=8, ha='left', va='bottom', transform=plt.gca().transAxes)
+    ax1.text(0.1, 0.3, f"True Values:\nMass = {conf.mass_total}\nK = {.1}\nA = {conf.a}\nV = {1}",
+             fontsize=8, ha='left', va='bottom', transform=plt.gca().transAxes)
+
+    ax1.plot(times, vacf[1:], ".")
+    ax1.plot(times, vacf_fit, label="fit")
+    ax1.plot(times, vacf_true, label="truth")
+    ax1.set_xscale("log")
+    ax1.set_xlabel("Time")
+    ax1.set_ylabel("VACF")
+
+    # Create a secondary y-axis for weights
+    ax2 = ax1.twinx()
+    ax2.plot(times_l, weights, label="Weights", color="orange", linestyle="--")
+    ax2.set_ylabel("Weights", color="orange")
+    ax2.tick_params(axis="y", labelcolor="orange")
+
+    # Add legends for both axes
+    fig.legend(loc="upper right", bbox_to_anchor=(0.85, 0.85))
+
+    # Show the plot
+    plt.title("VACF Fit and Exponential Weights")
     plt.show()
