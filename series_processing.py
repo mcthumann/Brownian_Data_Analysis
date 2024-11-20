@@ -96,7 +96,7 @@ def rect_window_filter(signal, bin_size):
 def process_series(series, conf):
     ## new function ...
     time = np.arange(0, len(series))
-    time = time * (conf.timestep)
+    time = time * (1/conf.sampling_rate)
 
     if SIM:
         time = time * conf.t_c
@@ -124,12 +124,12 @@ def process_series(series, conf):
         psd *= conf.t_c
     else:
         frequency, psd = scipy.signal.periodogram(series, conf.sampling_rate/BIN_NUM, scaling="density")
-    v_freq, v_psd_local = scipy.signal.periodogram(v_series, 1 / (conf.timestep * BIN_NUM), scaling="density")
+    v_freq, v_psd_local = scipy.signal.periodogram(v_series, conf.sampling_rate/BIN_NUM, scaling="density")
     v_psd = np.sqrt(v_psd_local)
 
     if ACF:
         acf = autocorrelation(series)
-        v_acf = compute_VACF_time_domain(v_series)
+        v_acf = autocorrelation(v_series)
 
     else:
         acf = 0

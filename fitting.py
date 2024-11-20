@@ -26,7 +26,7 @@ def PSD_fitting_func(omega, m, K, a, V):
     numerator = 2 * Const.k_b * Const.T * gamma_s * (1 + np.sqrt((1/2) * omega * tau_f))
     denominator = (m*((K/m)-omega**2) - omega * gamma_s * np.sqrt((1 / 2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
                 1 + np.sqrt((1/2) * omega * tau_f))**2
-    return V* numerator / denominator
+    return V**2 * numerator / denominator
 
 def VACF_fitting_func(t, m, K, a, V=1.0):
     t = t * (math.pi / 2)
@@ -87,7 +87,7 @@ def VACF_fitting(t, vacf_data, K, a, V, alpha):
     print(optimal_parameters.success, optimal_parameters.message)
     return optimal_parameters.x[0]*1e-14, optimal_parameters.x[1], optimal_parameters.x[2]
 
-def PSD_fitting(freq, PSD, a):
+def PSD_fitting(freq, PSD, a, m, k, v):
     # This function does the actual fitting
 
     def likelihood_func(x):
@@ -102,7 +102,7 @@ def PSD_fitting(freq, PSD, a):
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, np.array([M_GUESS*1e14, K_GUESS, V_GUESS]), bounds=[(M_GUESS*1e12, M_GUESS*1e16),(K_GUESS*1e-2,K_GUESS*1e2), (V_GUESS*1e-2,V_GUESS*1e2)], method='Powell', options={'disp': True})
+    optimal_parameters = minimize(likelihood_func, np.array([m*1e14, k, v]), bounds=[(m*1e12, m*1e14),(k*1e-5,k*1e5), (v*1e-5,v*1e5)], options={'disp': True})
     print(optimal_parameters.success, optimal_parameters.message)
     return optimal_parameters
 
@@ -163,7 +163,7 @@ def fit_data(dataset, conf, avg=True):
     # plt.yscale("log")
     # plt.show()
 
-    optimal_parameters = PSD_fitting(freq_r, PSD_r, conf.a)
+    optimal_parameters = PSD_fitting(freq_r, PSD_r, conf.a, M_GUESS, K_GUESS, V_GUESS)
     optimal_parameters.x[0] = optimal_parameters.x[0]*1e-14
     PSD_fit = PSD_fitting_func(freqs * 2 * np.pi, optimal_parameters.x[0], optimal_parameters.x[1], conf.a, optimal_parameters.x[2])
 

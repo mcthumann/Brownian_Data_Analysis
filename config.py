@@ -22,11 +22,11 @@ NUM_LOG_BINS=50
 # initial Guesses
 K_GUESS = .1
 A_GUESS = 3e-6
-V_GUESS = 1
+V_GUESS = 1000
 
 M_GUESS = 4e-14
 
-ACF = False
+ACF = True
 
 SINC = False
 HAMMING = False
