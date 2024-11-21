@@ -26,14 +26,14 @@ V_GUESS = 1000
 
 M_GUESS = 4e-14
 
-ACF = True
+ACF = False
 
 SINC = False
 HAMMING = False
 
 RECT_WINDOW = False
 BIN = False  # IF FALSE SET BIN NUM to 1
-BIN_NUM = 1
+BIN_NUM = 100
 
 class Config:
     def __init__(

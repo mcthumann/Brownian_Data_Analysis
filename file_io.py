@@ -7,7 +7,7 @@ from config import SIM, SAMPLE
 def read_tdms_file(file_path, data_col):
     tdms_file = TdmsFile.read(file_path)
     sample_rate = tdms_file["main"].properties.get("r", None)
-    series = tdms_file["main"]["X_" + str(data_col-1)]
+    series = tdms_file["main"][data_col + "_" + str(0)]
     track_len = len(series.data)
     config_args = {
         "sampling_rate": sample_rate,
@@ -16,15 +16,15 @@ def read_tdms_file(file_path, data_col):
 
     return series[:], config_args
 
-def read_csv_file(file_path, data_col):
+def read_csv_file(file_path, trace_num):
     # Read CSV with low_memory=False to avoid DtypeWarning
     df = pd.read_csv(file_path, low_memory=False)
 
     # Filter columns that start with "Position"
     position_columns = [col for col in df.columns if col.startswith("Position")]
 
-    if data_col - 1 < len(position_columns):
-        position_col = position_columns[data_col - 1]
+    if trace_num - 1 < len(position_columns):
+        position_col = position_columns[trace_num - 1]
         series = df[position_col].iloc[:]
         series = series[::SAMPLE]
         # Extract arguments from CSV
@@ -51,13 +51,14 @@ def read_csv_file(file_path, data_col):
 
         return series, config_args
     else:
-        raise ValueError(f"Data column index {data_col} is out of range for available 'Position' columns.")
+        raise ValueError(f"Data column index {trace_num} is out of range for available 'Position' columns.")
 
-def process_folder(offset, folder_name, tracks_per_file, num_traces):
+def process_folder(offset, folder_name, data_col, num_traces):
     results = []
     for i in range(num_traces):
         print("Reading ", folder_name, str(i))
-        result = process_file(folder_name, i, tracks_per_file, offset=offset)
+        print("data_col ", data_col)
+        result = process_file(folder_name, i, data_col, offset=offset)
         if result:
             results.append(result)
     return results

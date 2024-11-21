@@ -123,13 +123,12 @@ def process_series(series, conf):
         frequency /= conf.t_c
         psd *= conf.t_c
     else:
-        frequency, psd = scipy.signal.periodogram(series, conf.sampling_rate/BIN_NUM, scaling="density")
-    v_freq, v_psd_local = scipy.signal.periodogram(v_series, conf.sampling_rate/BIN_NUM, scaling="density")
-    v_psd = np.sqrt(v_psd_local)
+        frequency, psd = scipy.signal.periodogram(series, fs=conf.sampling_rate/BIN_NUM, scaling="density")
+    v_freq, v_psd = scipy.signal.periodogram(v_series, fs=conf.sampling_rate/BIN_NUM, scaling="density")
 
     if ACF:
         acf = autocorrelation(series)
-        v_acf = autocorrelation(v_series)
+        v_acf = compute_VACF_time_domain(v_series)
 
     else:
         acf = 0
