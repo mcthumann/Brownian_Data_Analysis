@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from joblib.parallel import method
 
 from config import MAX_BOUND, MIN_BOUND, NUM_LOG_BINS, K_GUESS, A_GUESS, V_GUESS, M_GUESS, SAMPLE
 from scipy.optimize import minimize
@@ -102,7 +101,7 @@ def PSD_fitting(freq, PSD, a, m, k, v):
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, np.array([m*1e14, k, v]), bounds=[(m*1e12, m*1e14),(k*1e-5,k*1e5), (v*1e-5,v*1e5)], options={'disp': True})
+    optimal_parameters = minimize(likelihood_func, np.array([m*1e14, k, v]), bounds=[(m*1e12, m*1e14),(k*1e-2,k*1e2), (v*1e-2,v*1e2)], method = 'Powell', options={'disp': True})
     print(optimal_parameters.success, optimal_parameters.message)
     return optimal_parameters
 

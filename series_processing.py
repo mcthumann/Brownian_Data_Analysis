@@ -93,7 +93,7 @@ def rect_window_filter(signal, bin_size):
     binned_signal[-edge_correction:] = signal[-edge_correction:]
     return binned_signal
 
-def process_series(series, conf):
+def process_series(series, conf, bin=1):
     ## new function ...
     time = np.arange(0, len(series))
     time = time * (1/conf.sampling_rate)
@@ -101,19 +101,19 @@ def process_series(series, conf):
     if SIM:
         time = time * conf.t_c
 
-    # Low pass before finding the time trace for position and velocity
-    if BIN:
-        series = bin_data(series, BIN_NUM)
-        time = bin_data(time, BIN_NUM)
-        v_series = np.diff(series) / np.diff(time)
-    elif RECT_WINDOW:
-        series = rect_window_filter(series, BIN_NUM)
-        v_series = np.diff(series) / np.diff(time)
-    elif SINC:
-        series = low_pass_sinc_filter(series, 1e7, conf.sampling_rate)
-        v_series = low_pass_velocity_trace(series, 1e7, conf.sampling_rate)
-    else:
-        v_series = np.diff(series) / np.diff(time)
+    series = bin_data(series, bin)
+    time = bin_data(time, bin)
+    v_series = np.diff(series) / np.diff(time)
+
+    #
+    # elif RECT_WINDOW:
+    #     series = rect_window_filter(series, BIN_NUM)
+    #     v_series = np.diff(series) / np.diff(time)
+    # elif SINC:
+    #     series = low_pass_sinc_filter(series, 1e7, conf.sampling_rate)
+    #     v_series = low_pass_velocity_trace(series, 1e7, conf.sampling_rate)
+    # else:
+    #     v_series = np.diff(series) / np.diff(time)
 
     if HAMMING:
         series = apply_hamming_window(series)
@@ -123,8 +123,8 @@ def process_series(series, conf):
         frequency /= conf.t_c
         psd *= conf.t_c
     else:
-        frequency, psd = scipy.signal.periodogram(series, fs=conf.sampling_rate/BIN_NUM, scaling="density")
-    v_freq, v_psd = scipy.signal.periodogram(v_series, fs=conf.sampling_rate/BIN_NUM, scaling="density")
+        frequency, psd = scipy.signal.periodogram(series, fs=conf.sampling_rate/bin, scaling="density")
+    v_freq, v_psd = scipy.signal.periodogram(v_series, fs=conf.sampling_rate/bin, scaling="density")
 
     if ACF:
         acf = autocorrelation(series)

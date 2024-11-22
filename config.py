@@ -11,7 +11,7 @@ LOAD = False
 # BASE_PATH = r"C:\Users\Cole Thumann\Desktop\Lab_Repos\MarkovianEmbedding\position_velocity_data.csv"
 BASE_PATH = r"\\tsclient\TESTFOLDER\20241119\long-good-noise"
 
-NUM_FILES = 20
+NUM_FILES = 10
 TRACKS_PER_FILE = 1
 
 # PSD FIT PARAMS
@@ -32,7 +32,7 @@ SINC = False
 HAMMING = False
 
 RECT_WINDOW = False
-BIN = False  # IF FALSE SET BIN NUM to 1
+BIN = True  # IF FALSE SET BIN NUM to 1
 BIN_NUM = 100
 
 class Config:
