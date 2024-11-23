@@ -11,7 +11,7 @@ LOAD = False
 # BASE_PATH = r"C:\Users\Cole Thumann\Desktop\Lab_Repos\MarkovianEmbedding\position_velocity_data.csv"
 BASE_PATH = r"\\tsclient\TESTFOLDER\20241119\long-good-noise"
 
-NUM_FILES = 10
+NUM_FILES = 6
 TRACKS_PER_FILE = 1
 
 # PSD FIT PARAMS
@@ -40,7 +40,7 @@ class Config:
             self,
             sampling_rate,
             track_len,
-            a=5e-6,
+            a=2e-6,
             eta=1e-3,
             rho_silica=2200,
             rho_f=1000,
@@ -60,7 +60,7 @@ class Config:
         self.mass_total = self.mass + 0.5 * (4 / 3) * math.pi * (
                     self.a / 2.0) ** 3 * self.rho_f  # Mass plus added mass
         print("MASS TOTAL IS " + str(self.mass_total))
-        self.gamma = 6 * math.pi * self.a * self.eta
+        self.gamma = 6 * math.pi * (self.a / 2.0) * self.eta
         self.t_c = self.mass_total / self.gamma
         self.v_c = math.sqrt((const.k * 293) / self.mass_total)
         self.x_c = self.v_c * self.t_c

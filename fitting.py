@@ -20,8 +20,8 @@ class Const:
 def PSD_fitting_func(omega, m, K, a, V):
     # This is the PSD we look to fit.  We fit for 3 parameters
     # Namely, we fit for the trap strength K, the radius of the particle a, and the voltage to position conversion V
-    gamma_s = 6 * math.pi * a * Const.eta
-    tau_f = Const.rho_f * a ** 2 / Const.eta
+    gamma_s = 6 * math.pi * (a / 2.0) * Const.eta
+    tau_f = Const.rho_f * (a / 2.0) ** 2 / Const.eta
     numerator = 2 * Const.k_b * Const.T * gamma_s * (1 + np.sqrt((1/2) * omega * tau_f))
     denominator = (m*((K/m)-omega**2) - omega * gamma_s * np.sqrt((1 / 2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
                 1 + np.sqrt((1/2) * omega * tau_f))**2
@@ -29,9 +29,9 @@ def PSD_fitting_func(omega, m, K, a, V):
 
 def VACF_fitting_func(t, m, K, a, V=1.0):
     t = t * (math.pi / 2)
-    t_k = (6 * math.pi * a * Const.eta) / K
-    t_f = (Const.rho_f * a ** 2) / Const.eta
-    t_p = m / (6 * math.pi * a * Const.eta)
+    t_k = (6 * math.pi * (a / 2.0) * Const.eta) / K
+    t_f = (Const.rho_f * (a / 2.0) ** 2) / Const.eta
+    t_p = m / (6 * math.pi * (a / 2.0) * Const.eta)
     # find roots
     # a * z^4 + b * z^3 + c * z^2 + d * z + e = 0
     a = t_p + (1 / 9.0) * t_f

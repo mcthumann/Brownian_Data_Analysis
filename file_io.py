@@ -4,10 +4,10 @@ import pandas as pd
 import pickle
 from config import SIM, SAMPLE
 
-def read_tdms_file(file_path, data_col):
+def read_tdms_file(file_path, data_col, trace_idx):
     tdms_file = TdmsFile.read(file_path)
     sample_rate = tdms_file["main"].properties.get("r", None)
-    series = tdms_file["main"][data_col + "_" + str(0)]
+    series = tdms_file["main"][data_col + "_" + str(trace_idx)]
     track_len = len(series.data)
     config_args = {
         "sampling_rate": sample_rate,
@@ -28,7 +28,8 @@ def read_csv_file(file_path, trace_num):
         series = df[position_col].iloc[:]
         series = series[::SAMPLE]
         # Extract arguments from CSV
-        a = df["a"].iloc[0] if "a" in df.columns else 5e-6
+        a = df["a"].iloc[0] if "a" in df.columns else 1e-6
+        a = a/2 # make it a radius
         eta = df["eta"].iloc[0] if "eta" in df.columns else 1e-3
         rho_silica = df["rho_silica"].iloc[0] if "rho_silica" in df.columns else 2200
         rho_f = df["rho_f"].iloc[0] if "rho_f" in df.columns else 1000
@@ -53,23 +54,24 @@ def read_csv_file(file_path, trace_num):
     else:
         raise ValueError(f"Data column index {trace_num} is out of range for available 'Position' columns.")
 
-def process_folder(offset, folder_name, data_col, num_traces):
+def process_folder(offset, folder_name, data_col, num_traces, traces_per):
     results = []
     for i in range(num_traces):
         print("Reading ", folder_name, str(i))
         print("data_col ", data_col)
-        result = process_file(folder_name, i, data_col, offset=offset)
-        if result:
-            results.append(result)
+        for j in range(traces_per):
+            result = process_file(folder_name, i, data_col, j, offset=offset)
+            if result:
+                results.append(result)
     return results
 
-def process_file(folder_name, trace_num, data_col, offset):
+def process_file(folder_name, trace_num, data_col, trace_idx, offset):
     if SIM:
         series, args = read_csv_file(folder_name, trace_num)
     else:
         trace_num = trace_num + offset
         file_path = os.path.join(folder_name, "iter_" + str(trace_num) + ".tdms")
-        series, args = read_tdms_file(file_path, data_col)
+        series, args = read_tdms_file(file_path, data_col, trace_idx)
 
     return {
         "series": series,
