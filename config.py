@@ -8,6 +8,7 @@ OFFSET_ITR = 54
 
 SAVE = False
 LOAD = False
+
 # BASE_PATH = r"C:\Users\Cole Thumann\Desktop\Lab_Repos\MarkovianEmbedding\position_velocity_data.csv"
 BASE_PATH = r"\\tsclient\TESTFOLDER\20241119\long-good-noise"
 
@@ -40,14 +41,15 @@ class Config:
             self,
             sampling_rate,
             track_len,
-            a=2e-6,
+            d=2e-6,
             eta=1e-3,
             rho_silica=2200,
             rho_f=1000,
             stop=None,
             start=None
     ):
-        self.a = a
+        self.d = d
+        self.a = d/2.0
         self.eta = eta
         self.rho_silica = rho_silica
         self.rho_f = rho_f
@@ -56,12 +58,17 @@ class Config:
         self.stop = stop
         self.start = start
 
-        self.mass = (4 / 3) * math.pi * (self.a / 2.0) ** 3 * self.rho_silica
-        self.mass_total = self.mass + 0.5 * (4 / 3) * math.pi * (
-                    self.a / 2.0) ** 3 * self.rho_f  # Mass plus added mass
+        self.mass = (4 / 3) * math.pi * self.a ** 3 * self.rho_silica
+        self.mass_total = self.mass + 0.5 * (4 / 3) * math.pi * self.a ** 3 * self.rho_f  # Mass plus added mass
         print("MASS TOTAL IS " + str(self.mass_total))
-        self.gamma = 6 * math.pi * (self.a / 2.0) * self.eta
+        self.gamma = 6 * math.pi * self.a * self.eta
         self.t_c = self.mass_total / self.gamma
         self.v_c = math.sqrt((const.k * 293) / self.mass_total)
         self.x_c = self.v_c * self.t_c
         self.timestep = 1.0 / self.sampling_rate
+
+    def print(self):
+        """Prints all attributes and their values in the Config object."""
+        attributes = vars(self)
+        for attr_name, attr_value in attributes.items():
+            print(f"{attr_name}: {attr_value}")

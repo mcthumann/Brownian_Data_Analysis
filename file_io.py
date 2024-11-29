@@ -28,8 +28,7 @@ def read_csv_file(file_path, trace_num):
         series = df[position_col].iloc[:]
         series = series[::SAMPLE]
         # Extract arguments from CSV
-        a = df["a"].iloc[0] if "a" in df.columns else 1e-6
-        a = a/2 # make it a radius
+        d = df["d"].iloc[0] if "d" in df.columns else 2e-6
         eta = df["eta"].iloc[0] if "eta" in df.columns else 1e-3
         rho_silica = df["rho_silica"].iloc[0] if "rho_silica" in df.columns else 2200
         rho_f = df["rho_f"].iloc[0] if "rho_f" in df.columns else 1000
@@ -40,7 +39,7 @@ def read_csv_file(file_path, trace_num):
         # start = df["start"].iloc[0] if "start" in df.columns else None
 
         config_args = {
-            "a": a,
+            "d": d,
             "eta": eta,
             "rho_silica": rho_silica,
             "rho_f": rho_f,

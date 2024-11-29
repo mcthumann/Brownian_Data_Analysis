@@ -18,7 +18,7 @@ def run():
         if (LOAD and os.path.exists(filename)):
             with open(filename, 'rb') as f:
                 results = pickle.load(f)
-                conf = Config(results[0]["sampling_rate"], results[0]["track_len"], results[0]["a"], results[0]["eta"], results[0]["rho_silica"], results[0]["rho_f"], results[0]["stop"], results[0]["start"])
+                conf = Config(results[0]["sampling_rate"], results[0]["track_len"], results[0]["d"], results[0]["eta"], results[0]["rho_silica"], results[0]["rho_f"], results[0]["stop"], results[0]["start"])
         else:
             traces = check_and_load_or_process(
                 filename, OFFSET_ITR,

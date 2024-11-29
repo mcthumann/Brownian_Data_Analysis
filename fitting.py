@@ -20,8 +20,8 @@ class Const:
 def PSD_fitting_func(omega, m, K, a, V):
     # This is the PSD we look to fit.  We fit for 3 parameters
     # Namely, we fit for the trap strength K, the radius of the particle a, and the voltage to position conversion V
-    gamma_s = 6 * math.pi * (a / 2.0) * Const.eta
-    tau_f = Const.rho_f * (a / 2.0) ** 2 / Const.eta
+    gamma_s = 6 * math.pi * a * Const.eta
+    tau_f = Const.rho_f * a ** 2 / Const.eta
     numerator = 2 * Const.k_b * Const.T * gamma_s * (1 + np.sqrt((1/2) * omega * tau_f))
     denominator = (m*((K/m)-omega**2) - omega * gamma_s * np.sqrt((1 / 2) * omega * tau_f)) ** 2 + omega**2 * gamma_s**2 * (
                 1 + np.sqrt((1/2) * omega * tau_f))**2
@@ -29,9 +29,9 @@ def PSD_fitting_func(omega, m, K, a, V):
 
 def VACF_fitting_func(t, m, K, a, V=1.0):
     t = t * (math.pi / 2)
-    t_k = (6 * math.pi * (a / 2.0) * Const.eta) / K
-    t_f = (Const.rho_f * (a / 2.0) ** 2) / Const.eta
-    t_p = m / (6 * math.pi * (a / 2.0) * Const.eta)
+    t_k = (6 * math.pi * a * Const.eta) / K
+    t_f = (Const.rho_f * a ** 2) / Const.eta
+    t_p = m / (6 * math.pi * a * Const.eta)
     # find roots
     # a * z^4 + b * z^3 + c * z^2 + d * z + e = 0
     a = t_p + (1 / 9.0) * t_f
@@ -96,13 +96,16 @@ def PSD_fitting(freq, PSD, a, m, k, v):
         # at its derivation for Brownian motion can be seen in Henrik's 2018 paper
         # The exact for depends on the type of noise; this one works for the gamma
         # distributed noise we expect from Brownian motion spectra
-        P = PSD_fitting_func(freq * 2 * np.pi, x[0]*1e-14, x[1], a, x[2])
-        return np.sum(PSD / (P) + np.log(P))
+        P = PSD_fitting_func(freq * 2 * np.pi, x[0]*1e-14, x[1], x[2], x[3])
+        likelihood = np.sum(PSD / (P) + np.log(P))
+        print(f"Function evaluation: x={x}, Likelihood={likelihood}")
+        return likelihood
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
-    optimal_parameters = minimize(likelihood_func, np.array([m*1e14, k, v]), bounds=[(m*1e12, m*1e14),(k*1e-2,k*1e2), (v*1e-2,v*1e2)], method = 'Powell', options={'disp': True})
-    print(optimal_parameters.success, optimal_parameters.message)
+    optimal_parameters = minimize(likelihood_func, np.array([m*1e14, k, a, v]), bounds=[(m*1e12, m*1e14),(k*1e-2,k*1e2),
+                                                                                        (a*1e-2, a*1e2), (v*1e-2,v*1e2)], method = 'Powell', options={'disp': True, 'maxiter': 10000, 'xtol': 1e-12, 'ftol': 1e-12})
+    print("Message: ", optimal_parameters.x, optimal_parameters.success, optimal_parameters.message)
     return optimal_parameters
 
 def select_freq_range(freq, PSD, minimum=1, maximum=10**7):
