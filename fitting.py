@@ -98,13 +98,13 @@ def PSD_fitting(freq, PSD, a, m, k, v):
         # distributed noise we expect from Brownian motion spectra
         P = PSD_fitting_func(freq * 2 * np.pi, x[0]*1e-14, x[1], x[2], x[3])
         likelihood = np.sum(PSD / (P) + np.log(P))
-        print(f"Function evaluation: x={x}, Likelihood={likelihood}")
+        # print(f"Function evaluation: x={x}, Likelihood={likelihood}")
         return likelihood
 
     # Note to help out the python minimization problem, we rescale our initial guesses for the parameters so
     # that they are on order unity.  I could not get this to work well without adding this feature
     optimal_parameters = minimize(likelihood_func, np.array([m*1e14, k, a, v]), bounds=[(m*1e12, m*1e14),(k*1e-2,k*1e2),
-                                                                                        (a*1e-2, a*1e2), (v*1e-2,v*1e2)], method = 'Powell', options={'disp': True, 'maxiter': 10000, 'xtol': 1e-12, 'ftol': 1e-12})
+                                                                                        (a*1e-2, a*1e2), (v*1e-2,v*1e2)], method = 'Powell', options={'disp': True, 'maxiter': 10000, 'xtol': 1e-14, 'ftol': 1e-14})
     print("Message: ", optimal_parameters.x, optimal_parameters.success, optimal_parameters.message)
     return optimal_parameters
 
