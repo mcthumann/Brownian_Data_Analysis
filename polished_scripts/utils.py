@@ -45,13 +45,25 @@ def s_minus_half_b_inverse_form(t, roots, m):
 def ensemble_r_term(t1, t2, m, K, roots, temp):
     return np.real((constants.k*temp)*(c_inverse_form(t1, roots, m) + c_inverse_form(t2, roots, m) - c_inverse_form(np.abs(t2-t1), roots, m) - m*b_inverse_form(t1, roots, m)*b_inverse_form(t2, roots, m) - K*c_inverse_form(t1, roots, m)*c_inverse_form(t2, roots, m)))
 
-def e_and_f(t, mass, radius, rho, eta, x0, v0, roots, m):
+def e_and_f(t, mass, radius, rho_f, eta, x0, v0, roots, m):
     gamma = 6*np.pi*radius*eta
-    z = 6*radius**2*np.pi*np.sqrt(rho*eta)
+    z = 6*radius**2*np.pi*np.sqrt(rho_f*eta)
+    return mass*x0*a_inverse_form(t, roots, m) + mass*v0*b_inverse_form(t, roots, m) + gamma*x0*b_inverse_form(t, roots, m) + z*x0*s_half_b_inverse_form(t, roots, m) + z*v0*s_minus_half_b_inverse_form(t, roots, m)
+
+
+def e_and_f_no_m_half(t, mass, radius, rho_f, eta, x0, v0, roots, m):
+    gamma = 6*np.pi*radius*eta
+    z = 6*radius**2*np.sqrt(rho_f*eta)
     return mass*x0*a_inverse_form(t, roots, m) + mass*v0*b_inverse_form(t, roots, m) + gamma*x0*b_inverse_form(t, roots, m) + z*x0*s_half_b_inverse_form(t, roots, m) + z*v0*s_minus_half_b_inverse_form(t, roots, m)
 
 def x_t1_x_t2(t1, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp):
     return e_and_f(t1, m, radius, rho_f, eta, x0, v0, roots, m)*e_and_f(t2, m, radius, rho_f, eta, x0, v0, roots, m) + ensemble_r_term(t1,t2, m, K, roots, temp)
+
+def x_t1_x_t2_no_half(t1, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp):
+    return e_and_f_no_m_half(t1, m, radius, rho_f, eta, x0, v0, roots, m)*e_and_f_no_m_half(t2, m, radius, rho_f, eta, x0, v0, roots, m) + ensemble_r_term(t1,t2, m, K, roots, temp)
+
+def full_hydro_msd_no_half(t1, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp):
+    return x_t1_x_t2_no_half(t1, t1, m, K, radius, eta, rho_f, x0, v0, roots, temp) + x_t1_x_t2_no_half(t2, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp) - 2 * x_t1_x_t2_no_half(t1, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp)
 
 def full_hydro_msd(t1, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp):
     return x_t1_x_t2(t1, t1, m, K, radius, eta, rho_f, x0, v0, roots, temp) + x_t1_x_t2(t2, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp) - 2 * x_t1_x_t2(t1, t2, m, K, radius, eta, rho_f, x0, v0, roots, temp)
