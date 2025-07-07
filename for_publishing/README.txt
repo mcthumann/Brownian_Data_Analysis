@@ -10,4 +10,8 @@ Steps to running data through this system
     a. run the file
     b. check that noise_position_bin30, noise_velocity_bin30 are saved to data
 
-3. Open
+3. Open Final Conditioning and run
+    a. check that __
+
+4. Open Noise Conditioning and run
+    a. check that __
